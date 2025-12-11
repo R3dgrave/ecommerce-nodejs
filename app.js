@@ -1,17 +1,23 @@
 require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
-const categoryRoutes = require("./routes/category");
+const morgan = require("morgan");
+
+// Clases de Dependencias
+const User = require("./db/user");
+const UserRepository = require("./repositories/user-repository");
+const TokenProvider = require("./providers/token-provider");
+const AuthServiceClass = require("./services/auth-service");
+
+// Importación de Middlewares y Factories
+const { verifyTokenFactory } = require("./middleware/auth-middleware");
+const errorHandler = require("./middleware/error-middleware");
+const authRoutesFactory = require("./routes/auth");
+
+// Rutas protegidas
 const brandRoutes = require("./routes/brand");
-const orderRoutes = require("./routes/order");
-const productRoutes = require("./routes/product");
-const customerRoutes = require("./routes/customer");
-const authRoutes = require("./routes/auth");
-const { verifyToken, isAdmin } = require("./middleware/auth-middleware");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 const corsOptions = {
   origin: process.env.FRONTEND_URL,
@@ -20,32 +26,35 @@ const corsOptions = {
   credentials: true,
 };
 
+// Middlewares Globales
+app.use(morgan("dev"));
 app.use(cors(corsOptions));
 app.use(express.json());
 
-async function connectDb() {
-  try {
-    await mongoose.connect(process.env.MONGO_URL, {});
-    console.log("Conexión a MongoDB establecida correctamente");
-  } catch (error) {
-    console.error("Error conectando a MongoDB:", error.message);
-    process.exit(1);
-  }
+function createApp(dependencies) {
+  const tokenProvider = new TokenProvider(process.env.JWT_SECRET);
+  const verifyTokenInstance = verifyTokenFactory(tokenProvider);
+
+  const authServiceInstance = new AuthServiceClass(
+    dependencies.userRepository,
+    tokenProvider
+  );
+
+  app.use("/auth", authRoutesFactory(authServiceInstance));
+
+  app.get("/", (req, res) => {
+    res.send("Servidor funcionando correctamente.");
+  });
+
+  app.use(errorHandler);
+
+  return app;
 }
 
-connectDb();
-
-app.use("/category", verifyToken, isAdmin, categoryRoutes);
-app.use("/brand", verifyToken, isAdmin, brandRoutes);
-app.use("/orders", verifyToken, isAdmin, orderRoutes);
-app.use("/product", verifyToken, isAdmin, productRoutes);
-app.use("/customer", verifyToken, customerRoutes);
-app.use("/auth", authRoutes);
-
-app.get("/", (req, res) => {
-  res.send("Servidor funcionando correctamente.");
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
-});
+module.exports = {
+  createApp,
+  User,
+  UserRepository,
+  TokenProvider,
+  AuthServiceClass,
+};

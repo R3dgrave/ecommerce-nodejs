@@ -1,41 +1,39 @@
-const jwt = require("jsonwebtoken");
+function verifyTokenFactory(tokenProvider) {
+  return function (req, res, next) {
+    const authHeader = req.header("Authorization");
 
-function verifyToken(req, res, next) {
-  const token = req.header("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        error:
+          "Acceso denegado. Formato de token inválido (se espera 'Bearer <token>').",
+      });
+    }
 
-  if (!token) {
-    return res.status(401).send({
-      error: "Acceso denegado, no se proporcionó token",
-    });
-  }
-  const bearerToken = token.split(" ")[1];
+    const token = authHeader.split(" ")[1];
 
-  if (!bearerToken) {
-    return res.status(401).send({
-      error: "Acceso denegado, formato de token inválido",
-    });
-  }
-
-  try {
-    // Verificar el token
-    const decode = jwt.verify(bearerToken, process.env.JWT_SECRET);
-    req.user = decode;
-    next();
-  } catch (err) {
-    return res.status(401).send({
-      error: "Acceso de token inválido",
-    });
-  }
+    try {
+      const decode = tokenProvider.verify(token);
+      req.user = decode;
+      next();
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        error: "Token inválido o expirado.",
+      });
+    }
+  };
 }
 
 function isAdmin(req, res, next) {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
-    return res.status(403).send({
-      error: "Acceso prohibido",
+    return res.status(403).json({
+      success: false,
+      error: "Acceso prohibido. Requiere privilegios de Administrador.",
     });
   }
 }
 
-module.exports = { verifyToken, isAdmin };
+module.exports = { verifyTokenFactory, isAdmin };

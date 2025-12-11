@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "test": "jest"
   },
   "author": "r3dgrave",
   "license": "ISC",
@@ -16,14 +16,18 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.1",
+    "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
-    "nodemon": "^3.1.7"
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.7",
+    "sinon": "^21.0.0",
+    "supertest": "^7.1.4"
   },
   "engines": {
-    "node": "22.11.0",
+    "node": ">=22.11.0",
     "npm": "10.9.0"
   }
 }
