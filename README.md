@@ -18,23 +18,24 @@ Este es el backend del proyecto **E-Commerce**, desarrollado como parte de un pr
 
 ---
 
-## Estructura de carpetas
+## 🌲 Árbol de Directorios
 
+```bash
 .
 ├── config/              # Archivos de configuración y variables de entorno
-│   └── index.js
+│   └── index.js         # Carga y validación de variables de entorno (Joi)
 ├── src/                 # Código fuente de la aplicación
-│   ├── app.js           # Archivo de configuración principal (Express, middlewares, etc.)
-│   ├── loaders/         # Inicialización de módulos externos (DB, DI, etc.)
-│   │   ├── dependency-injector.js # Configuración de Inyección de Dependencias (DI)
-│   │   └── database.js            # Conexión a Mongoose/MongoDB
-│   ├── middlewares/     # Middlewares de aplicación (Autenticación, Errores, Logs)
-│   │   └── error-middleware.js       # Middleware de manejo de errores
-│   │   └── auth-middleware.js        # Middleware para verificar isAdmin y token
-│   ├── models/          # Esquemas de Mongoose (Capa de Persistencia)
+│   ├── app.js           # Configuración principal de Express (Middlewares)
+│   ├── loaders/         # Inicialización de módulos críticos
+│   │   ├── dependency-injector.js # Contenedor de Inyección de Dependencias (DI)
+│   │   └── database.js            # Conexión inicial a Mongoose/MongoDB
+│   ├── middlewares/     # Middlewares de aplicación
+│   │   ├── error-middleware.js    # Manejo centralizado de errores
+│   │   └── auth-middleware.js     # Verificación de Token y Roles (isAdmin)
+│   ├── models/          # Esquemas de Mongoose (Definición de entidades)
 │   │   ├── Category.js
 │   │   └── Brand.js
-│   ├── api/             # Capa de Interfaz (Routers y Validaciones)
+│   ├── api/             # Capa de Interfaz y Enrutamiento
 │   │   ├── routes/      # Endpoints de Express (Controladores)
 │   │   │   ├── category.js      
 │   │   │   └── brand.js
@@ -44,18 +45,18 @@ Este es el backend del proyecto **E-Commerce**, desarrollado como parte de un pr
 │   │   │   └── brand-validator.js
 │   │   │   └── auth-validator.js
 │   ├── repositories/    # Capa de Abstracción de Datos (DAL)
-│   │   ├── category.repository.js # Implementación para Category
-│   │   └── brand.repository.js    # Implementación para Brand
-│   │   └── user.repository.js    # Implementación para User
+│   │   ├── category.repository.js # Operaciones CRUD para Category
+│   │   └── brand.repository.js    # Operaciones CRUD para Brand
+│   │   └── user.repository.js
 │   ├── services/        # Capa de Lógica de Negocio (Business Logic)
-│   │   ├── category.service.js
+│   │   ├── category.service.js  
 │   │   └── brand.service.js
 │   │   └── auth.service.js
-│   └── utils/           # Clases y funciones auxiliares (Custom Errors, helpers)
-│       └── errors.js
-├── tests/               # Pruebas de la aplicación (Unitarios, Integración, E2E)
-├── .env                 # Variables de entorno
-├── server.js            # Punto de entrada de Node.js (Inicializa app.js)
+│   └── utils/           # Clases y funciones auxiliares
+│       └── errors.js            # Definición de Custom Errors
+├── tests/               # Pruebas (Unitarias, E2E)
+├── .env                 # Variables de entorno local
+├── server.js            # Punto de entrada de Node.js (Orquesta los Loaders)
 └── package.json
 
 ---
