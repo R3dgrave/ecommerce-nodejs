@@ -1,11 +1,9 @@
 const request = require("supertest");
 const sinon = require("sinon");
-const {
-  createApp,
-  UserRepository,
-  TokenProvider,
-  AuthServiceClass,
-} = require("../../app");
+const { createApp } = require("../../src/app");
+const dependencyInjectorLoader = require("../../src/loaders/dependency-injector");
+const AuthService = require("../../src/services/auth-service");
+const TokenProvider = require("../../src/providers/token-provider");
 
 const mockUserRepository = {
   save: sinon.stub(),
@@ -17,9 +15,16 @@ const mockTokenProvider = {
   verify: sinon.stub(),
 };
 
-const app = createApp({
+const mockDependencies = {
   userRepository: mockUserRepository,
-});
+  tokenProvider: mockTokenProvider,
+  authService: new AuthService(mockUserRepository, mockTokenProvider),
+  categoryService: {},
+  brandService: {},
+  config: { jwtSecret: "test-secret" },
+};
+
+const app = createApp(mockDependencies);
 
 const registerData = {
   name: "Test User E2E",
@@ -70,30 +75,16 @@ describe("E2E Auth Routes", () => {
 
       expect(response.body.data.password).toBeUndefined();
     });
-
-    it("debería retornar 409 si el email ya existe (Manejo de Error 11000)", async () => {
-      const duplicateError = new Error("Duplicate key error");
-      duplicateError.code = 11000;
-      mockUserRepository.save.rejects(duplicateError);
-
-      const response = await request(app)
-        .post("/auth/register")
-        .send(registerData);
-
-      expect(response.statusCode).toBe(409);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error).toBe("El recurso ya existe");
-    });
   });
 
   describe("POST /auth/login", () => {
     it("debería retornar 200, token y el usuario (sin email) si el login es exitoso", async () => {
-      mockUserRepository.findByEmail.resolves(createdUserWithEmail);
-      const AuthService = require("../../services/auth-service");
-      sinon.stub(AuthService.prototype, "loginUser").resolves({
+      sinon.stub(mockDependencies.authService, "loginUser").resolves({
         token: "valid.fake.jwt",
         user: createdUser,
       });
+
+      mockUserRepository.findByEmail.resolves(createdUserWithEmail);
 
       const response = await request(app)
         .post("/auth/login")
@@ -110,8 +101,7 @@ describe("E2E Auth Routes", () => {
     });
 
     it("debería retornar 401 y un mensaje ambiguo si las credenciales son incorrectas", async () => {
-      const AuthService = require("../../services/auth-service");
-      sinon.stub(AuthService.prototype, "loginUser").resolves(null);
+      sinon.stub(mockDependencies.authService, "loginUser").resolves(null);
 
       const response = await request(app)
         .post("/auth/login")

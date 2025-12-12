@@ -1,5 +1,5 @@
 const sinon = require("sinon");
-const authMiddlewareFactory = require("../../middleware/auth-middleware");
+const authMiddlewareFactory = require("../../src/middlewares/auth-middleware");
 
 const MOCK_VALID_TOKEN = "Bearer valid.jwt.token";
 const MOCK_INVALID_TOKEN = "Bearer invalid.jwt.token";

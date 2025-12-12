@@ -1,24 +1,21 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
-const { createApp, User, UserRepository } = require("./app");
-
-const PORT = process.env.PORT || 3000;
+const config = require("./config/index");
+const { createApp } = require("./src/app");
+const databaseLoader = require("./src/loaders/database");
+const dependencyInjectorLoader = require("./src/loaders/dependency-injector");
+const PORT = config.port;
 
 async function connectDbAndStartServer() {
   try {
-    await mongoose.connect(process.env.MONGO_URL, {});
-    console.log("Conexión a MongoDB establecida correctamente");
-
-    const userRepository = new UserRepository(User);
-    const app = createApp({
-      userRepository: userRepository,
-    });
+    await databaseLoader();
+    const container = dependencyInjectorLoader();
+    const app = createApp(container);
 
     app.listen(PORT, () => {
-      console.log(`Servidor corriendo en el puerto ${PORT}`);
+      console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
+      console.log(`🌐 Entorno: ${config.env}`);
     });
   } catch (error) {
-    console.error("Error al iniciar el servidor:", error.message);
+    console.error("❌ Error al iniciar el servidor:", error.message);
     process.exit(1);
   }
 }

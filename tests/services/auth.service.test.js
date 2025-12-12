@@ -1,6 +1,6 @@
 const sinon = require("sinon");
 const bcrypt = require("bcrypt");
-const AuthServiceClass = require("../../services/auth-service");
+const AuthServiceClass = require("../../src/services/auth-service");
 
 const mockUserRepository = {
   findByEmail: sinon.stub(),

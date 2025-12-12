@@ -1,5 +1,5 @@
 const sinon = require("sinon");
-const UserRepository = require("../../repositories/user-repository");
+const UserRepository = require("../../src/repositories/user-repository");
 
 const MOCK_USER_DATA = {
   email: "test@example.com",
