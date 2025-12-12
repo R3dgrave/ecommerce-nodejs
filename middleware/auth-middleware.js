@@ -1,5 +1,5 @@
-function verifyTokenFactory(tokenProvider) {
-  return function (req, res, next) {
+module.exports = function (tokenProvider) {
+  const verifyToken = function (req, res, next) {
     const authHeader = req.header("Authorization");
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -23,17 +23,17 @@ function verifyTokenFactory(tokenProvider) {
       });
     }
   };
-}
 
-function isAdmin(req, res, next) {
-  if (req.user && req.user.isAdmin) {
-    next();
-  } else {
-    return res.status(403).json({
-      success: false,
-      error: "Acceso prohibido. Requiere privilegios de Administrador.",
-    });
-  }
-}
+  const isAdmin = function (req, res, next) {
+    if (req.user && req.user.isAdmin) {
+      next();
+    } else {
+      return res.status(403).json({
+        success: false,
+        error: "Acceso prohibido. Requiere privilegios de Administrador.",
+      });
+    }
+  };
 
-module.exports = { verifyTokenFactory, isAdmin };
+  return { verifyToken, isAdmin };
+};

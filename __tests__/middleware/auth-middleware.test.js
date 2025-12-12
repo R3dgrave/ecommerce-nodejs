@@ -1,8 +1,5 @@
 const sinon = require("sinon");
-const {
-  verifyTokenFactory,
-  isAdmin,
-} = require("../../middleware/auth-middleware");
+const authMiddlewareFactory = require("../../middleware/auth-middleware");
 
 const MOCK_VALID_TOKEN = "Bearer valid.jwt.token";
 const MOCK_INVALID_TOKEN = "Bearer invalid.jwt.token";
@@ -22,7 +19,7 @@ const mockTokenProvider = {
   verify: sinon.stub(),
 };
 
-const middleware = verifyTokenFactory(mockTokenProvider);
+const { verifyToken: middleware, isAdmin } = authMiddlewareFactory(mockTokenProvider);
 
 describe("AuthMiddleware", () => {
   let req;

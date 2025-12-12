@@ -162,7 +162,7 @@ npm start
     -Revisa req.user.isAdmin. Si es false o si el usuario no existe, retorna 403 Forbidden.
     -Solo permite el paso a las rutas críticas del negocio (CRUD de productos, categorías, marcas, y gestión de pedidos).
 
--Para obtener un token, los usuarios deben iniciar sesión a través del endpoint /auth/login. Este token debe ser enviado en el encabezado Authorization como Bearer <token> para acceder a las rutas protegidas.
+- Para obtener un token, los usuarios deben iniciar sesión a través del endpoint /auth/login. Este token debe ser enviado en el encabezado Authorization como Bearer <token> para acceder a las rutas protegidas.
 
 ---
 

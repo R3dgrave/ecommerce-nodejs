@@ -1,43 +1,95 @@
 const express = require("express");
-const router = express.Router();
-const Category = require("./../db/category");
 const {
-  addCategory,
-  updateCategory,
-  deleteCategory,
-  getCategories,
-  getCategoryById,
-} = require("../handlers/category-handler");
-const { verifyToken, isAdmin } = require("../middleware/auth-middleware");
+  validateCreateCategory,
+  validateUpdateCategory,
+  validateId,
+} = require("../validators/category-validator");
 
-router.post("",   verifyToken, isAdmin, async (req, res) => {
-  let model = req.body;
-  let result = await addCategory(model);
-  res.send(result);
-});
+module.exports = function (categoryService, verifyToken, isAdmin) {
+  const router = express.Router();
 
-router.get("", async (req, res) => {
-  let result = await getCategories();
-  res.send(result);
-});
+  router.post(
+    "/",
+    validateCreateCategory,
+    verifyToken,
+    isAdmin,
+    async (req, res, next) => {
+      try {
+        const { name } = req.body;
+        const result = await categoryService.createCategory({ name });
+        res.status(201).json({ success: true, result });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
-router.get("/:id", async (req, res) => {
-  let id = req.params["id"];
-  let result = await getCategoryById(id);
-  res.send(result);
-});
+  router.get("/", verifyToken, isAdmin, async (req, res, next) => {
+    try {
+      const result = await categoryService.getAllCategories();
+      res.status(200).json({ success: true, result });
+    } catch (error) {
+      next(error);
+    }
+  });
 
-router.put("/:id", verifyToken, isAdmin, async (req, res) => {
-  let model = req.body;
-  let id = req.params["id"];
-  await updateCategory(id, model);
-  res.send({ message: "listo " });
-});
+  router.get(
+    "/:id",
+    validateId,
+    verifyToken,
+    isAdmin,
+    async (req, res, next) => {
+      try {
+        const id = req.params.id;
+        const result = await categoryService.getCategoryById(id);
+        if (!result) {
+          return res
+            .status(404)
+            .json({ success: false, error: "Categoría no encontrada." });
+        }
+        res.status(200).json({ success: true, result });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
-router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
-  let id = req.params["id"];
-  await deleteCategory(id);
-  res.send({ message: "Eliminado" });
-});
+  router.put(
+    "/:id",
+    validateUpdateCategory,
+    verifyToken,
+    isAdmin,
+    async (req, res, next) => {
+      try {
+        const model = req.body;
+        const id = req.params.id;
 
-module.exports = router;
+        await categoryService.updateCategory(id, model);
+        res.status(200).json({
+          success: true,
+          message: "Actualización de categoría exitosa",
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.delete(
+    "/:id",
+    validateId,
+    verifyToken,
+    isAdmin,
+    async (req, res, next) => {
+      try {
+        const id = req.params.id;
+        await categoryService.deleteCategory(id);
+        res.status(200).json({ success: true, message: "Eliminado" });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  return router;
+};

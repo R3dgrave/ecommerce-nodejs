@@ -1,4 +1,3 @@
-//middleware/error-middleware.js
 const { CustomError } = require("../utils/errors");
 
 function errorHandler(err, req, res, next) {
@@ -9,6 +8,15 @@ function errorHandler(err, req, res, next) {
       code: err.statusCode,
     });
   }
+
+  if (err.status && err.status >= 400 && err.status < 500) {
+    // (400, 401, 403, 404, 409)
+    return res.status(err.status).json({
+      success: false,
+      error: err.message,
+      code: err.status,
+    });
+  }
 
   if (err.name === "ValidationError") {
     return res.status(400).json({

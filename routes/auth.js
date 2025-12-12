@@ -1,18 +1,14 @@
-// routes/auth.js
 const express = require("express");
+const {
+  validateRegister,
+  validateLogin,
+} = require("../validators/auth-validator");
 
 module.exports = function (authService) {
   const router = express.Router();
 
-  router.post("/register", async (req, res, next) => {
+  router.post("/register", validateRegister, async (req, res, next) => {
     const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: "Por favor, ingrese todos los datos requeridos",
-      });
-    }
 
     try {
       const user = await authService.registerUser({ name, email, password });
@@ -26,15 +22,8 @@ module.exports = function (authService) {
     }
   });
 
-  router.post("/login", async (req, res, next) => {
+  router.post("/login", validateLogin, async (req, res, next) => {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: "Por favor, ingrese correo y contraseña.",
-      });
-    }
 
     try {
       const result = await authService.loginUser({ email, password });
