@@ -16,6 +16,50 @@ Este es el backend del proyecto **E-Commerce**, desarrollado como parte de un pr
 8. Enlaces útiles
 9. Autor
 
+---
+
+## Estructura de carpetas
+
+.
+├── config/              # Archivos de configuración y variables de entorno
+│   └── index.js
+├── src/                 # Código fuente de la aplicación
+│   ├── app.js           # Archivo de configuración principal (Express, middlewares, etc.)
+│   ├── loaders/         # Inicialización de módulos externos (DB, DI, etc.)
+│   │   ├── dependency-injector.js # Configuración de Inyección de Dependencias (DI)
+│   │   └── database.js            # Conexión a Mongoose/MongoDB
+│   ├── middlewares/     # Middlewares de aplicación (Autenticación, Errores, Logs)
+│   │   └── error-middleware.js       # Middleware de manejo de errores
+│   │   └── auth-middleware.js        # Middleware para verificar isAdmin y token
+│   ├── models/          # Esquemas de Mongoose (Capa de Persistencia)
+│   │   ├── Category.js
+│   │   └── Brand.js
+│   ├── api/             # Capa de Interfaz (Routers y Validaciones)
+│   │   ├── routes/      # Endpoints de Express (Controladores)
+│   │   │   ├── category.js      
+│   │   │   └── brand.js
+│   │   │   └── auth.js
+│   │   └── validators/  # Validaciones de entrada (Express-Validator)
+│   │   │   ├── category-validator.js
+│   │   │   └── brand-validator.js
+│   │   │   └── auth-validator.js
+│   ├── repositories/    # Capa de Abstracción de Datos (DAL)
+│   │   ├── category.repository.js # Implementación para Category
+│   │   └── brand.repository.js    # Implementación para Brand
+│   │   └── user.repository.js    # Implementación para User
+│   ├── services/        # Capa de Lógica de Negocio (Business Logic)
+│   │   ├── category.service.js
+│   │   └── brand.service.js
+│   │   └── auth.service.js
+│   └── utils/           # Clases y funciones auxiliares (Custom Errors, helpers)
+│       └── errors.js
+├── tests/               # Pruebas de la aplicación (Unitarios, Integración, E2E)
+├── .env                 # Variables de entorno
+├── server.js            # Punto de entrada de Node.js (Inicializa app.js)
+└── package.json
+
+---
+
 ## 🚀 Descripción
 
 Este backend gestiona los productos, categorías, marcas, pedidos y usuarios a través de una API segura. Además, se incluye un sistema de autenticación basado en **JWT** para proteger las rutas de administración.
