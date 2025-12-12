@@ -58,6 +58,7 @@ Este es el backend del proyecto **E-Commerce**, desarrollado como parte de un pr
 ├── .env                 # Variables de entorno local
 ├── server.js            # Punto de entrada de Node.js (Orquesta los Loaders)
 └── package.json
+```
 
 ---
 
