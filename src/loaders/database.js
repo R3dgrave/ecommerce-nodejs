@@ -3,8 +3,7 @@ const config = require("../../config/index");
 
 /**
  * Conecta la aplicación a la base de datos MongoDB usando Mongoose.
- * Su configuración es inyectada desde el archivo config/index.js.
- * @returns {Promise<void>} Una promesa que se resuelve cuando la conexión es exitosa.
+ * @returns {Promise<void>}
  */
 async function databaseLoader() {
   try {
@@ -20,8 +19,22 @@ async function databaseLoader() {
       "🔴 MongoDB Error: Falló la conexión inicial a la base de datos.",
       error
     );
-    process.exit(1);
+    if (process.env.NODE_ENV !== 'test') {
+        process.exit(1);
+    }
+    throw error;
   }
 }
 
-module.exports = databaseLoader;
+/**
+ * Cierra la conexión de Mongoose con la base de datos para test de jest.
+ * @returns {Promise<void>}
+ */
+async function closeDatabase() {
+    if (mongoose.connection.readyState !== 0 && mongoose.connection.readyState !== 3) {
+        await mongoose.disconnect();
+        console.log("🟡 MongoDB: Conexión cerrada.");
+    }
+}
+
+module.exports = { databaseLoader, closeDatabase };

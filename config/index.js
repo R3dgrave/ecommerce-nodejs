@@ -6,7 +6,7 @@ const envSchema = Joi.object({
   FRONTEND_URL: Joi.string()
     .required()
     .description("La URL del frontend es Obligatoria"),
-    
+
   // Configuración general y entorno
   NODE_ENV: Joi.string()
     .valid("development", "production", "test")
@@ -19,6 +19,10 @@ const envSchema = Joi.object({
     .description(
       "La URI de conexión a la base de datos MongoDB es obligatoria."
     ),
+
+  MONGODB_URI_TEST: Joi.string().description(
+    "URI de conexión específica para el entorno de prueba (E2E/Integration)."
+  ),
 
   // Configuración de Seguridad (JWT)
   JWT_SECRET: Joi.string()
@@ -39,6 +43,28 @@ if (error) {
   throw new Error(`Error de validación de configuración: ${error.message}`);
 }
 
+function getTestDatabaseURI(originalURI) {
+  if (envVars.NODE_ENV !== 'test') {
+    return originalURI;
+  }
+
+  try {
+    const testURI = originalURI.replace(/(\/[a-zA-Z0-9_-]+)(\?|$)/, (match, dbName, suffix) => {
+      if (dbName.endsWith('-test')) {
+        return match;
+      }
+      return `${dbName}-test${suffix}`;
+    });
+
+    console.log(`🟡 Usando DB de Test: ${testURI}`);
+    return testURI;
+
+  } catch (e) {
+    console.warn("⚠️ Fallo al modificar la URI de MongoDB para test. Usando la URI original.", e);
+    return originalURI;
+  }
+}
+
 // Exportar la configuración con los tipos correctos
 module.exports = {
   frontend_URL: envVars.FRONTEND_URL,
@@ -46,7 +72,9 @@ module.exports = {
   port: envVars.PORT,
 
   // Base de Datos
-  databaseURL: envVars.MONGODB_URI,
+  databaseURL: envVars.NODE_ENV === 'test' && envVars.MONGODB_URI_TEST
+    ? envVars.MONGODB_URI_TEST
+    : envVars.MONGODB_URI,
 
   // Seguridad
   jwtSecret: envVars.JWT_SECRET,

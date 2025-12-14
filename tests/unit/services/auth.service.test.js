@@ -1,6 +1,7 @@
 const sinon = require("sinon");
 const bcrypt = require("bcrypt");
-const AuthServiceClass = require("../../src/services/auth-service");
+const AuthServiceClass = require("../../../src/services/auth-service");
+const { ConflictError } = require("../../../src/repositories/base-repository");
 
 const mockUserRepository = {
   findByEmail: sinon.stub(),
@@ -59,6 +60,14 @@ describe("AuthService", () => {
       mockUserRepository.save.rejects(dbError);
 
       await expect(authService.registerUser(userData)).rejects.toThrow(dbError);
+    });
+
+    it("debería lanzar 409 si el email ya existe (ConflictError)", async () => {
+      const conflictError = new ConflictError("Ya existe");
+
+      mockUserRepository.save.rejects(conflictError);
+
+      await expect(authService.registerUser(userData)).rejects.toHaveProperty('status', 409);
     });
   });
 

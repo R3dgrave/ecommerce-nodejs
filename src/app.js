@@ -29,12 +29,11 @@ function createApp(dependencies) {
 
   // CREACIÓN DE MIDDLEWARES DE AUTENTICACIÓN/AUTORIZACIÓN(Estos middlewares necesitan el tokenProvider)
   const { verifyToken, isAdmin } = authMiddlewareFactory(tokenProvider);
-  // ENRUTAMIENTO (Inyección de dependencias en Routers)
+  app.use("/auth", authRoutesFactory(authService));
+  app.use("/category", categoryRoutesFactory(categoryService, verifyToken, isAdmin));
   app.use("/brand", brandRoutesFactory(brandService, verifyToken, isAdmin));
-  app.use("/category",categoryRoutesFactory(categoryService, verifyToken, isAdmin));
-  app.use("/auth", authRoutesFactory(authService)); // authService ya tiene tokenProvider inyectado
 
-  app.get("/", (req, res) => {res.send("Servidor funcionando correctamente.");});
+  app.get("/", (req, res) => { res.send("Servidor funcionando correctamente."); });
 
   app.use(errorHandler);
 

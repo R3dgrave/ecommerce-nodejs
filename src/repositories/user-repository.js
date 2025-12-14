@@ -1,21 +1,22 @@
+const { BaseRepository } = require('./base-repository');
+
 /**
  * Clase que encapsula todas las operaciones de acceso a datos para los usuarios.
- * Patrón Repository.
- */
-class UserRepository {
+ *  */
+class UserRepository extends BaseRepository {
   constructor(UserModel) {
-    this.UserModel = UserModel;
+    super(UserModel);
   }
 
   async findByEmail(email) {
-    return this.UserModel.findOne({ email });
+    const user = await this.Model.findOne({ email }).exec();
+    return this._toPlainObject(user);
   }
 
   async save(userData) {
-    const user = new this.UserModel(userData);
-    await user.save();
-    return user;
+    return super.save(userData);
   }
+
 }
 
 module.exports = UserRepository;

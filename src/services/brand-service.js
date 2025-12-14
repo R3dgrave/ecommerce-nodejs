@@ -1,6 +1,8 @@
+const { ConflictError } = require('../repositories/base-repository');
+
 /**
  * Clase que contiene la lógica de negocio para las Marcas.
- * Service Pattern. DIP: Depende de la abstracción BrandRepository.
+ * Service Pattern. Depende de la abstracción BrandRepository.
  */
 class BrandService {
   constructor(brandRepository, categoryRepository, productRepository) {
@@ -20,8 +22,16 @@ class BrandService {
     }
   }
 
-  async getAllBrands() {
-    return this.brandRepository.find();
+  async getAllBrands(queryParams = {}) {
+    const { page, limit, name } = queryParams;
+
+    let filter = {};
+    if (name) {
+      filter.name = { $regex: new RegExp(name, 'i') };
+    }
+
+    const options = { page, limit };
+    return this.brandRepository.findWithPagination(filter, options);
   }
 
   async getBrandById(id) {
@@ -44,7 +54,7 @@ class BrandService {
     try {
       return await this.brandRepository.save(brandData);
     } catch (error) {
-      if (error.code === 11000) {
+      if (error instanceof ConflictError) {
         const conflictError = new Error("Ya existe una marca con este nombre.");
         conflictError.status = 409;
         throw conflictError;
@@ -61,7 +71,7 @@ class BrandService {
     try {
       await this.brandRepository.update(id, brandData);
     } catch (error) {
-      if (error.code === 11000) {
+      if (error instanceof ConflictError) {
         const conflictError = new Error("Ya existe otra marca con ese nombre.");
         conflictError.status = 409;
         throw conflictError;
@@ -78,8 +88,6 @@ class BrandService {
       throw notFoundError;
     }
 
-    // CHEQUEO DE INTEGRIDAD REFERENCIAL (Product)
-    // implementar un método countByBrandId() en ProductRepository
     const productsCount = await this.productRepository.countByBrandId(id);
     if (productsCount > 0) {
       const conflictError = new Error(

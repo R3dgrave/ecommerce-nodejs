@@ -3,6 +3,7 @@ const {
   validateCreateBrand,
   validateId,
   validateUpdateBrand,
+  validateCategoryIdParam
 } = require("../validators/brand-validator");
 
 module.exports = function (brandService, verifyToken, isAdmin) {
@@ -25,33 +26,17 @@ module.exports = function (brandService, verifyToken, isAdmin) {
     }
   );
 
-  router.put(
-    "/:id",
-    validateUpdateBrand,
+  router.get(
+    "/categories/:categoryId",
+    validateCategoryIdParam,
     verifyToken,
     isAdmin,
-    async (req, res, next) => {
-      try {
-        const id = req.params.id;
-        const model = req.body;
-        await brandService.updateBrand(id, model);
-        res.status(200).json({ success: true, message: "Marca actualizada" });
-      } catch (error) {
-        next(error);
-      }
-    }
-  );
 
-  router.delete(
-    "/:id",
-    validateId,
-    verifyToken,
-    isAdmin,
     async (req, res, next) => {
       try {
-        const id = req.params.id;
-        await brandService.deleteBrand(id);
-        res.status(200).json({ success: true, message: "eliminado" });
+        const categoryId = req.params.categoryId;
+        const brands = await brandService.getBrandsByCategory(categoryId);
+        res.status(200).json({ success: true, brands });
       } catch (error) {
         next(error);
       }
@@ -88,20 +73,34 @@ module.exports = function (brandService, verifyToken, isAdmin) {
     }
   });
 
-  // GET /brand/categories/:categoryId (Obtener por Categoría)
-  // Cuidado: Esta ruta puede colisionar con /brand/:id.
-  // Idealmente, debería ser /brand?categoryId=... o /categories/:categoryId/brands
-  router.get(
-    "/categories/:categoryId",
+
+  router.put(
+    "/:id",
+    validateUpdateBrand,
+    verifyToken,
+    isAdmin,
+    async (req, res, next) => {
+      try {
+        const id = req.params.id;
+        const model = req.body;
+        await brandService.updateBrand(id, model);
+        res.status(200).json({ success: true, message: "Marca actualizada" });
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
+
+  router.delete(
+    "/:id",
     validateId,
     verifyToken,
     isAdmin,
-
     async (req, res, next) => {
       try {
-        const categoryId = req.params.categoryId;
-        const brands = await brandService.getBrandsByCategory(categoryId);
-        res.status(200).json({ success: true, brands });
+        const id = req.params.id;
+        await brandService.deleteBrand(id);
+        res.status(200).json({ success: true, message: "eliminado" });
       } catch (error) {
         next(error);
       }

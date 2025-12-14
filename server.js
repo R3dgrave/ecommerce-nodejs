@@ -1,6 +1,6 @@
 const config = require("./config/index");
 const { createApp } = require("./src/app");
-const databaseLoader = require("./src/loaders/database");
+const { databaseLoader } = require("./src/loaders/database");
 const dependencyInjectorLoader = require("./src/loaders/dependency-injector");
 const PORT = config.port;
 

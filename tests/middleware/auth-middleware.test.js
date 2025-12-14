@@ -41,8 +41,6 @@ describe("AuthMiddleware", () => {
     next = sinon.stub();
   });
 
-  // TESTS PARA verifyTokenFactory
-  // -----------------------------------------------
   it("debería adjuntar el payload del usuario a req.user y llamar a next() si el token es válido", async () => {
     req.header.withArgs("Authorization").returns(MOCK_VALID_TOKEN);
     mockTokenProvider.verify
@@ -87,9 +85,6 @@ describe("AuthMiddleware", () => {
       error: expect.any(String),
     });
   });
-
-  // TESTS PARA isAdmin
-  // -----------------------------------------------
   describe("isAdmin", () => {
     it("debería llamar a next() si req.user.isAdmin es verdadero", () => {
       req.user = MOCK_ADMIN_PAYLOAD;

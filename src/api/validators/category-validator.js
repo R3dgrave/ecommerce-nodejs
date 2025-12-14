@@ -1,59 +1,39 @@
-const { body, param, validationResult } = require("express-validator");
+const { body, query } = require("express-validator");
+const {
+  handleValidationErrors,
+  validateId,
+  createNameValidationRule,
+  requireNonEmptyBody,
+  createOptionalNameValidationRule,
+} = require("../../middlewares/validation-utils");
 
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, errors: errors.array() });
-  }
-  next();
-};
+const categoryNameRule = createNameValidationRule("categoría");
+const optionalCategoryNameRule = createOptionalNameValidationRule("categoría");
 
-const validateId = [
-  param("id")
-    .exists()
-    .withMessage("El ID es requerido en la URL.")
-    .isMongoId()
-    .withMessage("El ID proporcionado no tiene un formato válido."),
-
-  handleValidationErrors,
-];
 
 const validateCreateCategory = [
-  body("name")
-    .exists()
-    .withMessage("El nombre de la categoría es requerido.")
-    .isString()
-    .withMessage("El nombre debe ser texto.")
-    .trim()
-    .notEmpty()
-    .withMessage("El nombre no puede estar vacío."),
-
-  handleValidationErrors,
+  categoryNameRule,
+  handleValidationErrors,
 ];
 
 const validateUpdateCategory = [
-  body("name")
-    .optional()
-    .isString()
-    .withMessage("El nombre debe ser texto.")
-    .trim()
-    .notEmpty()
-    .withMessage("El nombre no puede estar vacío."),
-  (req, res, next) => {
-    if (Object.keys(req.body).length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "El cuerpo de la solicitud no puede estar vacío.",
-      });
-    }
-    next();
-  },
+  // validateId debe ir antes si se usa en la ruta
+  optionalCategoryNameRule,
+  requireNonEmptyBody,
+  handleValidationErrors,
+];
 
-  handleValidationErrors,
+const validatePagination = [
+  query('page').optional().isInt({ gt: 0 }).withMessage('La página debe ser un número entero positivo.'),
+  query('limit').optional().isInt({ gt: 0, max: 100 }).withMessage('El límite debe ser un entero positivo y no exceder 100.'),
+  query('name').optional().isString().trim().escape().withMessage('El filtro de nombre debe ser una cadena de texto.'),
+  // Nota: No agregues handleValidationErrors aquí si se usa en la ruta GET, ya que
+  // quieres que el error de paginación se devuelva de forma predeterminada si falla.
 ];
 
 module.exports = {
-  validateCreateCategory,
-  validateUpdateCategory,
-  validateId,
+  validateCreateCategory,
+  validateUpdateCategory,
+  validateId: [...validateId, handleValidationErrors],
+  validatePagination,
 };

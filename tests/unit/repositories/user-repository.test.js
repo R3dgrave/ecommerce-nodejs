@@ -1,5 +1,5 @@
 const sinon = require("sinon");
-const UserRepository = require("../../src/repositories/user-repository");
+const UserRepository = require("../../../src/repositories/user-repository");
 
 const MOCK_USER_DATA = {
   email: "test@example.com",
@@ -15,6 +15,7 @@ const MOCK_SAVED_USER_RESULT = {
 let UserModelMock;
 let userRepository;
 let instanceMock;
+let findOneStub;
 
 describe("UserRepository", () => {
   beforeEach(() => {
@@ -27,26 +28,35 @@ describe("UserRepository", () => {
 
     instanceMock.save.resolves(instanceMock);
     UserModelMock = sinon.stub().returns(instanceMock);
-    UserModelMock.findOne = sinon.stub();
+
+    const findOneResultMock = {
+      exec: sinon.stub(),
+    };
+
+    findOneStub = sinon.stub().returns(findOneResultMock);
+    UserModelMock.findOne = findOneStub;
+
     userRepository = new UserRepository(UserModelMock);
+
+    findOneResultMock.exec.resolves(MOCK_SAVED_USER_RESULT);
   });
 
   describe("findByEmail", () => {
     it("debería llamar a UserModel.findOne con el email correcto", async () => {
-      UserModelMock.findOne.resolves(MOCK_SAVED_USER_RESULT);
+
       const emailToFind = MOCK_USER_DATA.email;
 
       const result = await userRepository.findByEmail(emailToFind);
 
-      expect(UserModelMock.findOne.calledOnce).toBe(true);
-      expect(UserModelMock.findOne.calledWith({ email: emailToFind })).toBe(
+      expect(findOneStub.calledOnce).toBe(true);
+      expect(findOneStub.calledWith({ email: emailToFind })).toBe(
         true
       );
       expect(result).toEqual(MOCK_SAVED_USER_RESULT);
     });
 
     it("debería devolver null si el usuario no es encontrado", async () => {
-      UserModelMock.findOne.resolves(null);
+      UserModelMock.findOne().exec.resolves(null);
 
       const result = await userRepository.findByEmail("nonexistent@test.com");
 
@@ -54,9 +64,6 @@ describe("UserRepository", () => {
     });
   });
 
-  // -----------------------------------------------------------------
-  // TEST: save
-  // -----------------------------------------------------------------
   describe("save", () => {
     it("debería crear una nueva instancia del modelo y llamar a save()", async () => {
       const result = await userRepository.save(MOCK_USER_DATA);

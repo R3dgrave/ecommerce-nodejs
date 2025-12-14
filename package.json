@@ -4,7 +4,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node server.js",
-    "test": "jest"
+    "test": "cross-env NODE_ENV=test jest"
   },
   "author": "r3dgrave",
   "license": "ISC",
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
+    "cross-env": "^10.1.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.7",
     "sinon": "^21.0.0",

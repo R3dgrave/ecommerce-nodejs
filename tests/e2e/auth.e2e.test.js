@@ -1,9 +1,7 @@
 const request = require("supertest");
 const sinon = require("sinon");
 const { createApp } = require("../../src/app");
-const dependencyInjectorLoader = require("../../src/loaders/dependency-injector");
 const AuthService = require("../../src/services/auth-service");
-const TokenProvider = require("../../src/providers/token-provider");
 
 const mockUserRepository = {
   save: sinon.stub(),

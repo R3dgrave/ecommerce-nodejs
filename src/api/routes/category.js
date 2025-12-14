@@ -3,6 +3,7 @@ const {
   validateCreateCategory,
   validateUpdateCategory,
   validateId,
+  validatePagination
 } = require("../validators/category-validator");
 
 module.exports = function (categoryService, verifyToken, isAdmin) {
@@ -24,9 +25,9 @@ module.exports = function (categoryService, verifyToken, isAdmin) {
     }
   );
 
-  router.get("/", verifyToken, isAdmin, async (req, res, next) => {
+  router.get("/", validatePagination, verifyToken, isAdmin, async (req, res, next) => {
     try {
-      const result = await categoryService.getAllCategories();
+      const result = await categoryService.getAllCategories(req.query);
       res.status(200).json({ success: true, result });
     } catch (error) {
       next(error);

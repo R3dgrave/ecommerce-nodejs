@@ -1,7 +1,8 @@
+const { ConflictError } = require('../repositories/base-repository');
+
 /**
  * Clase que contiene la lógica de negocio para las Categorías.
- * Service Pattern. DIP: Depende de la abstracción CategoryRepository.
- * lógica interna, acceso a otros servicios/repositorios, o traducción de errores de la base de datos
+ * Service Pattern. Depende de la abstracción CategoryRepository.
  */
 class CategoryService {
   constructor(categoryRepository, brandRepository, productRepository) {
@@ -10,8 +11,20 @@ class CategoryService {
     this.productRepository = productRepository;
   }
 
-  async getAllCategories() {
-    return this.categoryRepository.find();
+  async getAllCategories(query = {}) {
+    const { page = 1, limit = 10, name } = query;
+
+    const filter = {};
+    if (name) {
+      filter.name = { $regex: new RegExp(name, 'i') };
+    }
+
+    const options = {
+      limit: parseInt(limit, 10),
+      page: parseInt(page, 10),
+    };
+
+    return this.categoryRepository.findWithPagination(filter, options);
   }
 
   async getCategoryById(id) {
@@ -27,10 +40,12 @@ class CategoryService {
       throw error;
     }
 
+    categoryData.name = categoryData.name.trim();
+
     try {
       return await this.categoryRepository.save(categoryData);
     } catch (error) {
-      if (error.code === 11000) {
+      if (error instanceof ConflictError) {
         const conflictError = new Error(
           "Ya existe una categoría con este nombre."
         );
@@ -51,14 +66,9 @@ class CategoryService {
     }
 
     try {
-      // 2. Llamar al repositorio para la actualización
       await this.categoryRepository.update(id, categoryData);
-
-      // Opcional: verificar si la actualización afectó a 0 documentos
-      // para lanzar un 404 si el ID no existía. Esto requiere que el Repositorio
-      // devuelva información sobre el número de documentos afectados.
     } catch (error) {
-      if (error.code === 11000) {
+      if (error instanceof ConflictError) {
         const conflictError = new Error(
           "Ya existe otra categoría con ese nombre."
         );
@@ -78,8 +88,6 @@ class CategoryService {
       throw notFoundError;
     }
 
-    // CHEQUEO DE INTEGRIDAD REFERENCIAL (Brand)
-    // necesario implementar un método countByCategoryId() en BrandRepository
     const brandsCount = await this.brandRepository.countByCategoryId(id);
     if (brandsCount > 0) {
       const conflictError = new Error(
@@ -89,8 +97,6 @@ class CategoryService {
       throw conflictError;
     }
 
-    // CHEQUEO DE INTEGRIDAD REFERENCIAL (Product)
-    // implementar un método countByCategoryId() en ProductRepository
     const productsCount = await this.productRepository.countByCategoryId(id);
     if (productsCount > 0) {
       const conflictError = new Error(

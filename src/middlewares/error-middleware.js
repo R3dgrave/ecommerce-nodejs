@@ -32,7 +32,6 @@ function errorHandler(err, req, res, next) {
       .json({ success: false, error: "El recurso ya existe" });
   }
 
-  console.error("Error no manejado:", err.stack);
   return res.status(500).json({
     success: false,
     error: "Ocurrió un error inesperado en el servidor.",

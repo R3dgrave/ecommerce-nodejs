@@ -1,9 +1,10 @@
 const bcrypt = require("bcrypt");
 const { CustomError } = require("../utils/errors");
+const { ConflictError } = require('../repositories/base-repository');
 
 /**
  * Clase que contiene la lógica de negocio de la autenticación.
- * Service Pattern. DIP: Depende de abstracciones (UserRepository, TokenProvider).
+ * Service Pattern. Depende de abstracciones (UserRepository, TokenProvider).
  */
 class AuthService {
   constructor(userRepository, tokenProvider) {
@@ -23,13 +24,20 @@ class AuthService {
       };
 
       const user = await this.userRepository.save(userToSave);
+
       return {
         id: user._id,
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin || false,
       };
+
     } catch (error) {
+      if (error instanceof ConflictError) {
+        const conflictError = new Error("El correo electrónico ya está registrado.");
+        conflictError.status = 409;
+        throw conflictError;
+      }
       throw error;
     }
   }
