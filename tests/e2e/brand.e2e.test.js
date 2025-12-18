@@ -1,6 +1,6 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
-const { app, closeDatabase, userRepository } = require('./setup.e2e');
+const { app, closeDatabase } = require('./setup.e2e');
 
 const Category = require('../../src/models/category');
 const Brand = require('../../src/models/brand');
@@ -25,27 +25,16 @@ beforeAll(async () => {
 
   await request(app).post('/auth/register').send(MOCK_ADMIN_USER);
 
-  const user = await userRepository.findByEmail(MOCK_ADMIN_USER.email);
-  if (user) {
-    const userId = user.id || user._id;
+  const user = await User.findOne({ email: MOCK_ADMIN_USER.email });
+  if (!user) throw new Error("Usuario no encontrado tras registro");
 
-    if (userId) {
-      await userRepository.update(userId, { isAdmin: true });
-    } else {
-      throw new Error("❌ Error: Usuario encontrado pero sin ID válido para actualizar.");
-    }
-  } else {
-    throw new Error("❌ Error: Usuario de prueba no encontrado en la BDD.");
-  }
+  user.isAdmin = true;
+  await user.save();
 
   const loginRes = await request(app).post('/auth/login').send({
     email: MOCK_ADMIN_USER.email,
     password: MOCK_ADMIN_USER.password,
   });
-
-  if (loginRes.statusCode !== 200) {
-    throw new Error(`❌ Error de Login en beforeAll. Estado: ${loginRes.statusCode}`);
-  }
 
   adminToken = loginRes.body.data.token;
 
@@ -58,7 +47,7 @@ beforeAll(async () => {
     throw new Error(`❌ Error al crear la categoría de prueba. Estado: ${categoryRes.statusCode}. Mensaje: ${JSON.stringify(categoryRes.body)}`);
   }
 
-  existingCategoryId = categoryRes.body.result._id;
+  existingCategoryId = categoryRes.body.result._id || categoryRes.body.result.id;
 
   expect(categoryRes.statusCode).toBe(201);
 });
@@ -93,7 +82,8 @@ describe('E2E: /brand routes', () => {
       expect(res.body.result.name).toBe('sony e2e');
       expect(res.body.result.categoryId).toBe(existingCategoryId);
 
-      newBrandId = res.body.result._id;
+      newBrandId = res.body.result._id || res.body.result.id;
+      expect(newBrandId).toBeDefined();
     });
 
     it('debería fallar con 409 si la marca ya existe', async () => {
@@ -156,7 +146,7 @@ describe('E2E: /brand routes', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'other category test e2e' + Date.now() });
 
-      const otherCategoryId = otherCategoryRes.body.result._id;
+      const otherCategoryId = otherCategoryRes.body.result._id || otherCategoryRes.body.result.id;
 
       const res = await request(app)
         .get(`/brand/categories/${otherCategoryId}`)
@@ -287,6 +277,7 @@ describe('E2E: /brand routes', () => {
     });
 
     it('debería fallar con 404 si se intenta eliminar una marca que no existe', async () => {
+      const fakeId = new mongoose.Types.ObjectId().toString();
       const res = await request(app)
         .delete(`/brand/${newBrandId}`)
         .set('Authorization', `Bearer ${adminToken}`);

@@ -1,4 +1,5 @@
 const express = require("express");
+const BrandControllerFactory = require("../controllers/brand-controller");
 const {
   validateCreateBrand,
   validateId,
@@ -6,105 +7,69 @@ const {
   validateCategoryIdParam
 } = require("../validators/brand-validator");
 
+/**
+ * Función factory para crear el router de Marcas.
+ * @param {BrandService} brandService - Instancia del servicio de Marcas.
+ * @param {Function} verifyToken - Middleware de autenticación.
+ * @param {Function} isAdmin - Middleware de autorización.
+ * @returns {express.Router} El router configurado.
+ */
 module.exports = function (brandService, verifyToken, isAdmin) {
   const router = express.Router();
+  const brandController = BrandControllerFactory(brandService);
 
+  // POST /brand
   router.post(
     "/",
     validateCreateBrand,
     verifyToken,
     isAdmin,
-
-    async (req, res, next) => {
-      try {
-        const { name, categoryId } = req.body;
-        const result = await brandService.createBrand({ name, categoryId });
-        res.status(201).json({ success: true, result });
-      } catch (error) {
-        next(error);
-      }
-    }
+    brandController.createBrand
   );
 
+  // GET /brand/categories/:categoryId
   router.get(
     "/categories/:categoryId",
     validateCategoryIdParam,
     verifyToken,
     isAdmin,
-
-    async (req, res, next) => {
-      try {
-        const categoryId = req.params.categoryId;
-        const brands = await brandService.getBrandsByCategory(categoryId);
-        res.status(200).json({ success: true, brands });
-      } catch (error) {
-        next(error);
-      }
-    }
+    brandController.getBrandsByCategory
   );
 
+  // GET /brand/:id
   router.get(
     "/:id",
     validateId,
     verifyToken,
     isAdmin,
-    async (req, res, next) => {
-      try {
-        const id = req.params.id;
-        const brand = await brandService.getBrandById(id);
-        if (!brand) {
-          return res
-            .status(404)
-            .json({ success: false, error: "Marca no encontrada." });
-        }
-        res.status(200).json({ success: true, brand });
-      } catch (error) {
-        next(error);
-      }
-    }
+    brandController.getBrandById
   );
 
-  router.get("/", verifyToken, isAdmin, async (req, res, next) => {
-    try {
-      const brands = await brandService.getAllBrands();
-      res.status(200).json({ success: true, brands });
-    } catch (error) {
-      next(error);
-    }
-  });
+  // GET /brand (GetAll)
+  router.get(
+    "/",
+    verifyToken,
+    isAdmin,
+    brandController.getAllBrands
+  );
 
 
+  // PUT /brand/:id
   router.put(
     "/:id",
     validateUpdateBrand,
     verifyToken,
     isAdmin,
-    async (req, res, next) => {
-      try {
-        const id = req.params.id;
-        const model = req.body;
-        await brandService.updateBrand(id, model);
-        res.status(200).json({ success: true, message: "Marca actualizada" });
-      } catch (error) {
-        next(error);
-      }
-    }
+    brandController.updateBrand
   );
 
+  // DELETE /brand/:id
   router.delete(
     "/:id",
     validateId,
     verifyToken,
     isAdmin,
-    async (req, res, next) => {
-      try {
-        const id = req.params.id;
-        await brandService.deleteBrand(id);
-        res.status(200).json({ success: true, message: "eliminado" });
-      } catch (error) {
-        next(error);
-      }
-    }
+    brandController.deleteBrand
   );
 
   return router;

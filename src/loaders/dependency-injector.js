@@ -5,7 +5,7 @@ const config = require("../../config/index");
 const UserModel = require("../models/user");
 const CategoryModel = require("../models/category");
 const BrandModel = require("../models/brand");
-// const ProductModel = require('../models/product');
+const ProductModel = require('../models/product');
 
 // Import Repositorios
 const UserRepository = require("../repositories/user-repository");
@@ -20,6 +20,7 @@ const TokenProvider = require("../providers/token-provider");
 const AuthServiceClass = require("../services/auth-service");
 const CategoryServiceClass = require("../services/category-service");
 const BrandServiceClass = require("../services/brand-service");
+const ProductServiceClass = require("../services/product-service");
 
 /**
  * Instancia y enlaza todas las dependencias de la aplicación.
@@ -33,7 +34,7 @@ function dependencyInjectorLoader() {
   const userRepository = new UserRepository(UserModel);
   const categoryRepository = new CategoryRepository(CategoryModel);
   const brandRepository = new BrandRepository(BrandModel);
-  const productRepository = new ProductRepository(/* ProductModel */);
+  const productRepository = new ProductRepository(ProductModel);
 
   // INSTANCIAR SERVICIOS (Necesitan Repositorios y/o Providers)
   const authService = new AuthServiceClass(userRepository, tokenProvider);
@@ -50,12 +51,19 @@ function dependencyInjectorLoader() {
     productRepository
   );
 
+  const productService = new ProductServiceClass( 
+		productRepository, 
+		categoryRepository, 
+		brandRepository
+	);
+
   // ENSAMBLAR Y RETORNAR EL CONTENEDOR FINAL
   const container = {
     // Servicios
     authService,
     categoryService,
     brandService,
+    productService,
 
     // Repositorios
     userRepository,

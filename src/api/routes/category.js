@@ -1,4 +1,5 @@
 const express = require("express");
+const CategoryControllerFactory = require("../controllers/category-controller");
 const {
   validateCreateCategory,
   validateUpdateCategory,
@@ -6,90 +7,60 @@ const {
   validatePagination
 } = require("../validators/category-validator");
 
+/**
+ * Función factory para crear el router de Categorías.
+ * @param {CategoryService} categoryService - Instancia del servicio de Categorías.
+ * @param {Function} verifyToken - Middleware de autenticación.
+ * @param {Function} isAdmin - Middleware de autorización.
+ * @returns {express.Router} El router configurado.
+ */
 module.exports = function (categoryService, verifyToken, isAdmin) {
   const router = express.Router();
+  const categoryController = CategoryControllerFactory(categoryService);
 
+  // POST /category
   router.post(
     "/",
     validateCreateCategory,
     verifyToken,
     isAdmin,
-    async (req, res, next) => {
-      try {
-        const { name } = req.body;
-        const result = await categoryService.createCategory({ name });
-        res.status(201).json({ success: true, result });
-      } catch (error) {
-        next(error);
-      }
-    }
+    categoryController.createCategory
   );
 
-  router.get("/", validatePagination, verifyToken, isAdmin, async (req, res, next) => {
-    try {
-      const result = await categoryService.getAllCategories(req.query);
-      res.status(200).json({ success: true, result });
-    } catch (error) {
-      next(error);
-    }
-  });
+  // GET /category
+  router.get(
+    "/",
+    validatePagination,
+    verifyToken,
+    isAdmin,
+    categoryController.getAllCategories
+  );
 
+  // GET /category/:id
   router.get(
     "/:id",
     validateId,
     verifyToken,
     isAdmin,
-    async (req, res, next) => {
-      try {
-        const id = req.params.id;
-        const result = await categoryService.getCategoryById(id);
-        if (!result) {
-          return res
-            .status(404)
-            .json({ success: false, error: "Categoría no encontrada." });
-        }
-        res.status(200).json({ success: true, result });
-      } catch (error) {
-        next(error);
-      }
-    }
+    categoryController.getCategoryById
   );
 
+  // PUT /category/:id
   router.put(
     "/:id",
     validateUpdateCategory,
     verifyToken,
     isAdmin,
-    async (req, res, next) => {
-      try {
-        const model = req.body;
-        const id = req.params.id;
-
-        await categoryService.updateCategory(id, model);
-        res.status(200).json({
-          success: true,
-          message: "Actualización de categoría exitosa",
-        });
-      } catch (error) {
-        next(error);
-      }
-    }
+    categoryController.updateCategory
   );
 
+  // DELETE /category/:id
   router.delete(
     "/:id",
     validateId,
     verifyToken,
     isAdmin,
-    async (req, res, next) => {
-      try {
-        const id = req.params.id;
-        await categoryService.deleteCategory(id);
-        res.status(200).json({ success: true, message: "Eliminado" });
-      } catch (error) {
-        next(error);
-      }
-    }
+    categoryController.deleteCategory
   );
 
   return router;

@@ -14,6 +14,12 @@ class BrandRepository extends BaseRepository {
     return this.count(filter);
   }
 
+  /**
+    * Cuenta cuántas marcas existen para una categoría dada.
+    * Método vital para la lógica de eliminación de CategoryService.
+    * @param {string} categoryId
+    * @returns {Promise<number>}
+    */
   async countByCategoryId(categoryId) {
     const filter = { categoryId: categoryId };
     return this.count(filter);

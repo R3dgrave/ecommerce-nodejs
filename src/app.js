@@ -8,6 +8,7 @@ const errorHandler = require("./middlewares/error-middleware");
 const authRoutesFactory = require("./api/routes/auth");
 const brandRoutesFactory = require("./api/routes/brand");
 const categoryRoutesFactory = require("./api/routes/category");
+const productRoutesFactory = require("./api/routes/product");
 
 const app = express();
 
@@ -25,13 +26,14 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 function createApp(dependencies) {
-  const { authService, categoryService, brandService, tokenProvider } = dependencies;
+  const { authService, categoryService, brandService, productService, tokenProvider } = dependencies;
 
   // CREACIÓN DE MIDDLEWARES DE AUTENTICACIÓN/AUTORIZACIÓN(Estos middlewares necesitan el tokenProvider)
   const { verifyToken, isAdmin } = authMiddlewareFactory(tokenProvider);
   app.use("/auth", authRoutesFactory(authService));
   app.use("/category", categoryRoutesFactory(categoryService, verifyToken, isAdmin));
   app.use("/brand", brandRoutesFactory(brandService, verifyToken, isAdmin));
+  app.use("/product", productRoutesFactory(productService, verifyToken, isAdmin));
 
   app.get("/", (req, res) => { res.send("Servidor funcionando correctamente."); });
 

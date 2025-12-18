@@ -17,6 +17,14 @@ class UserRepository extends BaseRepository {
     return super.save(userData);
   }
 
+  async deleteAll() {
+    return this.deleteMany({});
+  }
+
+  async deleteByEmail(email) {
+    return this.deleteMany({ email: email });
+  }
+
 }
 
 module.exports = UserRepository;

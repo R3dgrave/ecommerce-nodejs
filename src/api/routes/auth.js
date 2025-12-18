@@ -1,50 +1,32 @@
 const express = require("express");
+const AuthControllerFactory = require("../controllers/auth-controller");
 const {
   validateRegister,
   validateLogin,
 } = require("../validators/auth-validator");
 
+/**
+ * Función factory para crear el router de Autenticación.
+ * @param {AuthService} authService - Instancia del servicio de Autenticación.
+ * @returns {express.Router} El router configurado.
+ */
 module.exports = function (authService) {
   const router = express.Router();
+  const authController = AuthControllerFactory(authService);
 
-  router.post("/register", validateRegister, async (req, res, next) => {
-    const { name, email, password } = req.body;
+  // POST /auth/register
+  router.post(
+    "/register",
+    validateRegister,
+    authController.register
+  );
 
-    try {
-      const user = await authService.registerUser({ name, email, password });
-      res.status(201).json({
-        success: true,
-        data: user,
-        message: "Usuario registrado exitosamente.",
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.post("/login", validateLogin, async (req, res, next) => {
-    const { email, password } = req.body;
-
-    try {
-      const result = await authService.loginUser({ email, password });
-
-      if (result) {
-        res.status(200).json({
-          success: true,
-          data: {
-            token: result.token,
-            user: result.user,
-          },
-        });
-      } else {
-        res
-          .status(401)
-          .json({ success: false, error: "Correo o contraseña incorrectos." });
-      }
-    } catch (error) {
-      next(error);
-    }
-  });
+  // POST /auth/login
+  router.post(
+    "/login",
+    validateLogin,
+    authController.login
+  );
 
   return router;
 };
