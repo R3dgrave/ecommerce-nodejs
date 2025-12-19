@@ -46,7 +46,7 @@ const validateCreateProduct = [
   validateMongoIdBody("brandId", "El ID de la marca es requerido."),
 
   body("stock")
-    .optional()
+    .exists()
     .isInt({ min: 0 })
     .withMessage("El stock debe ser un número entero positivo o cero."),
 

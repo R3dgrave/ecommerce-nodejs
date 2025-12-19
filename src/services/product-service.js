@@ -91,10 +91,8 @@ class ProductService {
   // --- Métodos CRUD ---
 
   async createProduct(productData) {
-    // 1. Validar dependencias (CategoryId y BrandId)
     await this._checkDependencies(productData.categoryId, productData.brandId);
 
-    // 2. Guardar el producto
     try {
       return await this.productRepository.save(productData);
     } catch (error) {

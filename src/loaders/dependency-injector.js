@@ -1,4 +1,4 @@
-// Import Configuración
+//src/loaders/dependency-injector.js
 const config = require("../../config/index");
 
 // Import Modelos (Mongoose)
@@ -6,12 +6,14 @@ const UserModel = require("../models/user");
 const CategoryModel = require("../models/category");
 const BrandModel = require("../models/brand");
 const ProductModel = require('../models/product');
+const CartModel = require('../models/cart');
 
 // Import Repositorios
 const UserRepository = require("../repositories/user-repository");
 const CategoryRepository = require("../repositories/category-repository");
 const BrandRepository = require("../repositories/brand-repository");
 const ProductRepository = require("../repositories/product-repository");
+const CartRepository = require("../repositories/cart-repository");
 
 // Import Providers
 const TokenProvider = require("../providers/token-provider");
@@ -21,6 +23,7 @@ const AuthServiceClass = require("../services/auth-service");
 const CategoryServiceClass = require("../services/category-service");
 const BrandServiceClass = require("../services/brand-service");
 const ProductServiceClass = require("../services/product-service");
+const CartServiceClass = require("../services/cart-service");
 
 /**
  * Instancia y enlaza todas las dependencias de la aplicación.
@@ -35,6 +38,7 @@ function dependencyInjectorLoader() {
   const categoryRepository = new CategoryRepository(CategoryModel);
   const brandRepository = new BrandRepository(BrandModel);
   const productRepository = new ProductRepository(ProductModel);
+  const cartRepository = new CartRepository(CartModel);
 
   // INSTANCIAR SERVICIOS (Necesitan Repositorios y/o Providers)
   const authService = new AuthServiceClass(userRepository, tokenProvider);
@@ -51,11 +55,13 @@ function dependencyInjectorLoader() {
     productRepository
   );
 
-  const productService = new ProductServiceClass( 
-		productRepository, 
-		categoryRepository, 
-		brandRepository
-	);
+  const productService = new ProductServiceClass(
+    productRepository,
+    categoryRepository,
+    brandRepository
+  );
+
+  const cartService = new CartServiceClass(cartRepository, productRepository);
 
   // ENSAMBLAR Y RETORNAR EL CONTENEDOR FINAL
   const container = {
@@ -64,12 +70,14 @@ function dependencyInjectorLoader() {
     categoryService,
     brandService,
     productService,
+    cartService,
 
     // Repositorios
     userRepository,
     categoryRepository,
     brandRepository,
     productRepository,
+    cartRepository,
 
     // Providers
     tokenProvider,

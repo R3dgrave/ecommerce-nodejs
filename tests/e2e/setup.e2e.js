@@ -1,59 +1,75 @@
+const mongoose = require('mongoose');
 const { createApp } = require("../../src/app");
 const { databaseLoader, closeDatabase } = require("../../src/loaders/database");
 
+// Repositorios
 const UserRepositoryClass = require("../../src/repositories/user-repository");
 const CategoryRepositoryClass = require("../../src/repositories/category-repository");
 const BrandRepositoryClass = require("../../src/repositories/brand-repository");
 const ProductRepositoryClass = require("../../src/repositories/product-repository");
+const CartRepositoryClass = require("../../src/repositories/cart-repository");
 
+// Servicios
 const AuthServiceClass = require("../../src/services/auth-service");
 const CategoryServiceClass = require("../../src/services/category-service");
 const BrandServiceClass = require("../../src/services/brand-service");
 const ProductServiceClass = require("../../src/services/product-service");
+const CartServiceClass = require("../../src/services/cart-service");
 
+// Modelos
 const UserModel = require("../../src/models/user");
 const CategoryModel = require("../../src/models/category");
 const BrandModel = require("../../src/models/brand");
 const ProductModel = require("../../src/models/product");
+const CartModel = require("../../src/models/cart");
 
 const TokenProviderClass = require("../../src/providers/token-provider");
 const config = require("../../config/index");
 
-// Repositorios (usando los modelos de Mongoose)
+// --- Instanciación de Repositorios ---
 const userRepository = new UserRepositoryClass(UserModel);
 const categoryRepository = new CategoryRepositoryClass(CategoryModel);
 const brandRepository = new BrandRepositoryClass(BrandModel);
 const productRepository = new ProductRepositoryClass(ProductModel);
+const cartRepository = new CartRepositoryClass(CartModel);
 
 const tokenProvider = new TokenProviderClass(
   config.jwtSecret || "default-secret-test"
 );
 
-// Servicios (Inyección de Repositorios/Providers)
+// --- Instanciación de Servicios ---
 const authService = new AuthServiceClass(userRepository, tokenProvider);
+
 const categoryService = new CategoryServiceClass(
   categoryRepository,
   brandRepository,
   productRepository
 );
+
 const brandService = new BrandServiceClass(
   brandRepository,
   categoryRepository,
   productRepository
 );
+
 const productService = new ProductServiceClass(
   productRepository,
   categoryRepository,
   brandRepository
 );
 
-// Inicialización de Express (la instancia REAL)
-// Se crea la app con todas las dependencias instanciadas
+const cartService = new CartServiceClass(
+  cartRepository,
+  productRepository
+);
+
+// --- Inicialización de Express ---
 const app = createApp({
   authService,
   categoryService,
   brandService,
   productService,
+  cartService,
   tokenProvider,
 });
 
@@ -65,13 +81,24 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-// Exporta la app inicializada y la función de cierre para el test E2E.
+const cleanDatabase = async () => {
+  const collections = mongoose.connection.collections;
+  for (const key in collections) {
+    await collections[key].deleteMany({});
+  }
+};
+
+// Exportaciones para uso en los archivos .test.js
 module.exports = {
   app,
   closeDatabase,
+  cleanDatabase,
   userRepository,
+  productRepository,
+  cartRepository,
+  UserModel,
   CategoryModel,
   BrandModel,
   ProductModel,
-  productRepository,
+  CartModel,
 };

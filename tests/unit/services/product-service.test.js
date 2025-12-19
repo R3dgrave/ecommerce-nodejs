@@ -12,6 +12,7 @@ const MOCK_PRODUCT_DATA = {
   categoryId: MOCK_CATEGORY_ID,
   brandId: MOCK_BRAND_ID,
   price: 100,
+  stock: 50,
 };
 const MOCK_SAVED_PRODUCT = { ...MOCK_PRODUCT_DATA, _id: MOCK_PRODUCT_ID };
 const MOCK_CATEGORY_EXISTING = { id: MOCK_CATEGORY_ID, name: 'Gadgets' };

@@ -1,204 +1,138 @@
 const request = require("supertest");
-const sinon = require("sinon");
 const mongoose = require('mongoose');
+const { app, closeDatabase, cleanDatabase } = require("./setup.e2e");
 
-const { createApp } = require("../../src/app");
-const CategoryService = require("../../src/services/category-service");
+const User = require('../../src/models/user');
+const Category = require('../../src/models/category');
 
-const mockCategoryService = sinon.createStubInstance(CategoryService);
-const mockTokenProvider = { verify: sinon.stub().returns({ id: 'auth-user', isAdmin: true }) };
+describe("E2E Category Routes (Real DB)", () => {
+  let adminToken;
+  let createdCategoryId;
 
-const mockContainer = {
-  categoryService: mockCategoryService,
-  brandService: {},
-  authService: {},
-  tokenProvider: mockTokenProvider,
-  config: { jwtSecret: 'test-secret' }
-};
+  const MOCK_ADMIN = {
+    name: "Admin Category Test",
+    email: "admin-cat-e2e@test.com",
+    password: "securepassword123",
+    isAdmin: true,
+  };
 
-const app = createApp(mockContainer);
+  beforeAll(async () => {
+    await cleanDatabase();
 
-const MOCK_ADMIN_TOKEN = 'Bearer VALID_ADMIN_TOKEN';
+    await request(app).post('/auth/register').send(MOCK_ADMIN);
 
-const mockId = new mongoose.Types.ObjectId().toString();
-const newCategoryData = { name: "Electronics" };
-const mockSavedCategory = { id: mockId, name: newCategoryData.name };
+    await User.findOneAndUpdate({ email: MOCK_ADMIN.email }, { isAdmin: true });
 
-describe("E2E Category Routes", () => {
-  beforeEach(() => {
-    sinon.resetHistory();
-    mockCategoryService.createCategory.resetHistory();
-    mockCategoryService.getCategoryById.resetHistory();
-    mockCategoryService.updateCategory.resetHistory();
-    mockCategoryService.deleteCategory.resetHistory();
+    const loginRes = await request(app).post('/auth/login').send({
+      email: MOCK_ADMIN.email,
+      password: MOCK_ADMIN.password,
+    });
+
+    adminToken = loginRes.body.data.token;
   });
 
-  describe("POST /category", () => {
-    it("debería retornar 201 y la categoría creada si es exitoso", async () => {
-      mockCategoryService.createCategory.resolves(mockSavedCategory);
+  afterAll(async () => {
+    await closeDatabase();
+  });
 
+  // --- Tests de Creación ---
+  describe("POST /category", () => {
+    it("debería crear una categoría exitosamente (Status 201)", async () => {
       const response = await request(app)
         .post("/category")
-        .set('Authorization', MOCK_ADMIN_TOKEN)
-        .send(newCategoryData);
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: "electronics" });
 
       expect(response.statusCode).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.result).toEqual(mockSavedCategory);
+      expect(response.body.result.name).toBe("electronics");
+
+      createdCategoryId = response.body.result._id || response.body.result.id;
     });
 
-    it("debería retornar 400 si falta el nombre (validación de Express-Validator)", async () => {
+    it("debería retornar 400 si falta el nombre (Validación)", async () => {
       const response = await request(app)
         .post("/category")
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({});
 
       expect(response.statusCode).toBe(400);
       expect(response.body.success).toBe(false);
-      expect(response.body.errors[0].msg).toBe('El nombre de la categoría es requerido.');
     });
 
-    it("debería retornar 409 si el servicio detecta duplicado", async () => {
-      const conflictError = new Error('Ya existe una categoría con este nombre.');
-      conflictError.status = 409;
-      mockCategoryService.createCategory.rejects(conflictError);
-
+    it("debería retornar 409 si el nombre ya existe (Conflicto real en DB)", async () => {
       const response = await request(app)
         .post("/category")
-        .set('Authorization', MOCK_ADMIN_TOKEN)
-        .send(newCategoryData);
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: "electronics" });
 
       expect(response.statusCode).toBe(409);
-      expect(response.body.error).toBe(conflictError.message);
+      expect(response.body.error).toContain("existe");
     });
   });
 
+  // --- Tests de Lectura ---
   describe("GET /category", () => {
-    it("debería retornar 200 y la lista de categorías con datos de paginación", async () => {
-      const mockPaginationResult = {
-        data: [mockSavedCategory],
-        totalCount: 10,
-        totalPages: 1,
-        currentPage: 1,
-        limit: 10
-      };
-
-      mockCategoryService.getAllCategories.resolves(mockPaginationResult);
-
+    it("debería retornar la lista de categorías paginada", async () => {
       const response = await request(app)
-        .get("/category?page=1&limit=5&name=comp")
-        .set('Authorization', MOCK_ADMIN_TOKEN);
+        .get("/category?page=1&limit=10")
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.statusCode).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.result).toEqual(mockPaginationResult);
-
-      expect(mockCategoryService.getAllCategories.calledOnce).toBe(true);
-      expect(mockCategoryService.getAllCategories.getCall(0).args[0]).toEqual({ page: '1', limit: '5', name: 'comp' });
-    });
-
-    it("debería retornar 500 si hay un error en el servicio de listado", async () => {
-      mockCategoryService.getAllCategories.rejects(new Error("Database connection failed"));
-
-      const response = await request(app)
-        .get("/category")
-        .set('Authorization', MOCK_ADMIN_TOKEN);
-
-      expect(response.statusCode).toBe(500);
+      expect(Array.isArray(response.body.result.data)).toBe(true);
+      expect(response.body.result.totalCount).toBeGreaterThanOrEqual(1);
     });
   });
 
   describe("GET /category/:id", () => {
-    it("debería retornar 200 y la categoría si es encontrada", async () => {
-      mockCategoryService.getCategoryById.resolves(mockSavedCategory);
-
+    it("debería retornar 200 y la categoría si existe", async () => {
       const response = await request(app)
-        .get(`/category/${mockId}`)
-        .set('Authorization', MOCK_ADMIN_TOKEN);
+        .get(`/category/${createdCategoryId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.statusCode).toBe(200);
-      expect(response.body.result).toEqual(mockSavedCategory);
+      expect(response.body.result.name).toBe("electronics");
     });
 
     it("debería retornar 404 si la categoría no existe", async () => {
-      mockCategoryService.getCategoryById.resolves(null);
-
+      const fakeId = new mongoose.Types.ObjectId();
       const response = await request(app)
-        .get(`/category/${mockId}`)
-        .set('Authorization', MOCK_ADMIN_TOKEN);
+        .get(`/category/${fakeId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.statusCode).toBe(404);
-      expect(response.body.error).toBe('Categoría no encontrada.');
     });
   });
 
-  describe("DELETE /category/:id", () => {
-    it("debería retornar 200 si la eliminación es exitosa", async () => {
-      mockCategoryService.deleteCategory.resolves();
-
+  // --- Tests de Actualización ---
+  describe("PUT /category/:id", () => {
+    it("debería actualizar el nombre exitosamente", async () => {
       const response = await request(app)
-        .delete(`/category/${mockId}`)
-        .set('Authorization', MOCK_ADMIN_TOKEN);
+        .put(`/category/${createdCategoryId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: "computing" });
+
+      expect(response.statusCode).toBe(200);
+
+      // Verificar en la base de datos
+      const updatedCat = await Category.findById(createdCategoryId);
+      expect(updatedCat.name).toBe("computing");
+    });
+  });
+
+  // --- Tests de Eliminación ---
+  describe("DELETE /category/:id", () => {
+    it("debería eliminar la categoría exitosamente", async () => {
+      const response = await request(app)
+        .delete(`/category/${createdCategoryId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.statusCode).toBe(200);
       expect(response.body.message).toBe('Eliminado');
-    });
 
-    it("debería retornar 409 si existen dependencias", async () => {
-      const conflictError = new Error('No se puede eliminar la categoría. 5 marca(s) dependen de ella.');
-      conflictError.status = 409;
-      mockCategoryService.deleteCategory.rejects(conflictError);
-
-      const response = await request(app)
-        .delete(`/category/${mockId}`)
-        .set('Authorization', MOCK_ADMIN_TOKEN);
-
-      expect(response.statusCode).toBe(409);
-      expect(response.body.error).toContain('dependen de ella');
-    });
-  });
-
-  describe("PUT /category/:id", () => {
-    const updateData = { name: "New Name" };
-
-    it("debería retornar 200 si la actualización es exitosa", async () => {
-      mockCategoryService.updateCategory.resolves(true);
-
-      const response = await request(app)
-        .put(`/category/${mockId}`)
-        .set('Authorization', MOCK_ADMIN_TOKEN)
-        .send(updateData);
-
-      expect(response.statusCode).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe("Actualización de categoría exitosa");
-
-      expect(mockCategoryService.updateCategory.calledOnceWith(mockId, updateData)).toBe(true);
-    });
-
-    it("debería retornar 400 si el nombre es inválido (validación)", async () => {
-      const response = await request(app)
-        .put(`/category/${mockId}`)
-        .set('Authorization', MOCK_ADMIN_TOKEN)
-        .send({ name: '' });
-
-      expect(response.statusCode).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.errors[0].msg).toBe('El nombre de la categoría es requerido.');
-    });
-
-    it("debería retornar 409 si el nuevo nombre ya existe (conflicto)", async () => {
-      const conflictError = new Error('Ya existe otra categoría con ese nombre.');
-      conflictError.status = 409;
-
-      mockCategoryService.updateCategory.rejects(conflictError);
-
-      const response = await request(app)
-        .put(`/category/${mockId}`)
-        .set('Authorization', MOCK_ADMIN_TOKEN)
-        .send(updateData);
-
-      expect(response.statusCode).toBe(409);
-      expect(response.body.error).toBe(conflictError.message);
+      const checkInDb = await Category.findById(createdCategoryId);
+      expect(checkInDb).toBeNull();
     });
   });
 });

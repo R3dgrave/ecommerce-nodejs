@@ -17,7 +17,6 @@ const validateCreateCategory = [
 ];
 
 const validateUpdateCategory = [
-  // validateId debe ir antes si se usa en la ruta
   optionalCategoryNameRule,
   requireNonEmptyBody,
   handleValidationErrors,
@@ -27,8 +26,6 @@ const validatePagination = [
   query('page').optional().isInt({ gt: 0 }).withMessage('La página debe ser un número entero positivo.'),
   query('limit').optional().isInt({ gt: 0, max: 100 }).withMessage('El límite debe ser un entero positivo y no exceder 100.'),
   query('name').optional().isString().trim().escape().withMessage('El filtro de nombre debe ser una cadena de texto.'),
-  // Nota: No agregues handleValidationErrors aquí si se usa en la ruta GET, ya que
-  // quieres que el error de paginación se devuelva de forma predeterminada si falla.
 ];
 
 module.exports = {

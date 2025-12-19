@@ -85,6 +85,7 @@ describe("AuthMiddleware", () => {
       error: expect.any(String),
     });
   });
+
   describe("isAdmin", () => {
     it("debería llamar a next() si req.user.isAdmin es verdadero", () => {
       req.user = MOCK_ADMIN_PAYLOAD;

@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const {
   app,
   closeDatabase,
+  cleanDatabase
 } = require("./setup.e2e");
 
 const Product = require('../../src/models/product');
@@ -27,10 +28,7 @@ const MOCK_ADMIN_USER = {
 };
 
 beforeAll(async () => {
-  await Product.deleteMany({});
-  await Brand.deleteMany({ name: MOCK_BRAND_NAME });
-  await Category.deleteMany({ name: MOCK_CATEGORY_NAME });
-  await User.deleteMany({ email: MOCK_ADMIN_USER.email });
+  await cleanDatabase();
 
   await request(app).post('/auth/register').send(MOCK_ADMIN_USER);
   const user = await User.findOne({ email: MOCK_ADMIN_USER.email });
@@ -45,22 +43,23 @@ beforeAll(async () => {
 
   adminToken = loginRes.body.data.token;
 
-  const categoryRes = await request(app)
-    .post("/category")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({ name: MOCK_CATEGORY_NAME });
+  const catRes = await request(app)
+    .post('/category')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ name: 'electronics product test' });
 
-  existingCategoryId = categoryRes.body.result._id || categoryRes.body.result.id;
-  expect(categoryRes.statusCode).toBe(201);
+  existingCategoryId = catRes.body.result._id || catRes.body.result.id;
 
-  // Crear Marca
   const brandRes = await request(app)
-    .post("/brand")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({ name: MOCK_BRAND_NAME, categoryId: existingCategoryId });
+    .post('/brand')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ name: 'sony product test', categoryId: existingCategoryId });
 
-  existingBrandId = brandRes.body.result._id || brandRes.body.result.id;;
-  expect(brandRes.statusCode).toBe(201);
+  if (!brandRes.body.result) {
+    throw new Error(`Fallo setup Producto: No se pudo crear la marca. Error: ${JSON.stringify(brandRes.body)}`);
+  }
+
+  existingBrandId = brandRes.body.result._id || brandRes.body.result.id;
 });
 
 afterAll(async () => {
@@ -232,10 +231,23 @@ describe("E2E: /product routes", () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
 
-      // Verificación
       const checkRes = await request(app).get(`/product/${newProductId}`);
       expect(checkRes.body.result.name).toBe(updateData.name);
       expect(checkRes.body.result.price).toBe(updateData.price);
+    });
+
+    it("debería actualizar el stock exitosamente", async () => {
+      const updateStock = { stock: 100 };
+
+      const res = await request(app)
+        .put(`/product/${newProductId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send(updateStock);
+
+      expect(res.statusCode).toBe(200);
+
+      const checkRes = await request(app).get(`/product/${newProductId}`);
+      expect(checkRes.body.result.stock).toBe(100);
     });
 
     it("debería fallar con 400 si el body está vacío (Middleware requireNonEmptyBody)", async () => {

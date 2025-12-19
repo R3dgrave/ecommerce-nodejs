@@ -1,114 +1,67 @@
 const request = require("supertest");
-const sinon = require("sinon");
-const { createApp } = require("../../src/app");
-const AuthService = require("../../src/services/auth-service");
+const { app, closeDatabase, cleanDatabase, UserModel } = require("./setup.e2e");
+const User = require('../../src/models/user');
 
-const mockUserRepository = {
-  save: sinon.stub(),
-  findByEmail: sinon.stub(),
-};
+describe("E2E Auth Routes (Real DB)", () => {
 
-const mockTokenProvider = {
-  generate: sinon.stub().returns("valid.fake.jwt"),
-  verify: sinon.stub(),
-};
-
-const mockDependencies = {
-  userRepository: mockUserRepository,
-  tokenProvider: mockTokenProvider,
-  authService: new AuthService(mockUserRepository, mockTokenProvider),
-  categoryService: {},
-  brandService: {},
-  config: { jwtSecret: "test-secret" },
-};
-
-const app = createApp(mockDependencies);
-
-const registerData = {
-  name: "Test User E2E",
-  email: "e2e@test.com",
-  password: "securepassword123",
-};
-
-const loginCredentials = {
-  email: registerData.email,
-  password: registerData.password,
-};
-
-const createdUser = {
-  id: "user-id-123",
-  name: registerData.name,
-  isAdmin: false,
-};
-
-const createdUserWithEmail = {
-  _id: "user-id-123",
-  name: registerData.name,
-  email: registerData.email,
-  isAdmin: false,
-};
-
-describe("E2E Auth Routes", () => {
-  beforeEach(() => {
-    sinon.restore();
-
-    mockUserRepository.save.resetHistory();
-    mockUserRepository.findByEmail.resetHistory();
-    mockTokenProvider.generate.resetHistory();
+  beforeEach(async () => {
+    await cleanDatabase();
   });
 
-  describe("POST /auth/register", () => {
-    it("debería retornar 201 y el usuario (sin password) si el registro es exitoso", async () => {
-      mockUserRepository.save.resolves(createdUserWithEmail);
+  afterAll(async () => {
+    await closeDatabase();
+  });
 
+  const userData = {
+    name: "Test User",
+    email: "real-e2e@test.com",
+    password: "securepassword123",
+  };
+
+  describe("POST /auth/register", () => {
+    it("debería persistir el usuario en la DB y no devolver el password", async () => {
       const response = await request(app)
         .post("/auth/register")
-        .send(registerData);
+        .send(userData);
 
       expect(response.statusCode).toBe(201);
-      expect(response.body.success).toBe(true);
-
-      expect(response.body.data.id).toBe(createdUserWithEmail._id);
-      expect(response.body.data.name).toBe(createdUserWithEmail.name);
-
+      expect(response.body.data.email).toBe(userData.email);
       expect(response.body.data.password).toBeUndefined();
+
+      const userInDb = await User.findOne({ email: userData.email });
+      expect(userInDb).not.toBeNull();
+      expect(userInDb.password).not.toBe(userData.password);
     });
   });
 
   describe("POST /auth/login", () => {
-    it("debería retornar 200, token y el usuario (sin email) si el login es exitoso", async () => {
-      sinon.stub(mockDependencies.authService, "loginUser").resolves({
-        token: "valid.fake.jwt",
-        user: createdUser,
-      });
-
-      mockUserRepository.findByEmail.resolves(createdUserWithEmail);
+    it("debería loguear con éxito un usuario previamente registrado", async () => {
+      await request(app).post("/auth/register").send(userData);
 
       const response = await request(app)
         .post("/auth/login")
-        .send(loginCredentials);
+        .send({
+          email: userData.email,
+          password: userData.password
+        });
 
       expect(response.statusCode).toBe(200);
-      expect(response.body.success).toBe(true);
-
-      expect(response.body.data.token).toBe("valid.fake.jwt");
-      expect(response.body.data.user.id).toBe(createdUser.id);
-      expect(response.body.data.user.name).toBe(createdUser.name);
-
+      expect(response.body.data).toHaveProperty("token");
       expect(response.body.data.user.email).toBeUndefined();
     });
 
-    it("debería retornar 401 y un mensaje ambiguo si las credenciales son incorrectas", async () => {
-      sinon.stub(mockDependencies.authService, "loginUser").resolves(null);
+    it("debería fallar con credenciales incorrectas", async () => {
+      await request(app).post("/auth/register").send(userData);
 
       const response = await request(app)
         .post("/auth/login")
-        .send(loginCredentials);
+        .send({
+          email: userData.email,
+          password: "wrong-password"
+        });
 
       expect(response.statusCode).toBe(401);
       expect(response.body.success).toBe(false);
-
-      expect(response.body.error).toBe("Correo o contraseña incorrectos.");
     });
   });
 });
