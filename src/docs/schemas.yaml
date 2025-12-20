@@ -43,6 +43,25 @@ components:
             user:
               $ref: "#/components/schemas/User"
 
+    UserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/User"
+
+    GeneralResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operación realizada con éxito"
+
     ErrorResponse:
       type: object
       properties:
@@ -96,10 +115,16 @@ components:
         success:
           type: boolean
           example: true
-        brands:
-          type: array
-          items:
-            $ref: "#/components/schemas/Brand"
+        result:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Brand"
+            totalCount: { type: integer, example: 10 }
+            totalPages: { type: integer, example: 1 }
+            currentPage: { type: integer, example: 1 }
 
     Category:
       type: object
@@ -129,11 +154,11 @@ components:
         result:
           type: object
           properties:
-            docs:
+            data:
               type: array
               items:
                 $ref: "#/components/schemas/Category"
-            totalDocs:
+            totalCount:
               type: integer
               example: 50
             limit:
@@ -142,6 +167,9 @@ components:
             page:
               type: integer
               example: 1
+            totalPages:
+              type: integer
+              example: 5
 
     Product:
       type: object
@@ -208,11 +236,11 @@ components:
         result:
           type: object
           properties:
-            docs:
+            data:
               type: array
               items:
                 $ref: "#/components/schemas/Product"
-            totalDocs:
+            totalCount:
               type: integer
               example: 100
             totalPages:
@@ -221,6 +249,7 @@ components:
             page:
               type: integer
               example: 1
+            limit: { type: integer, example: 10 }
 
     CartItem:
       type: object

@@ -4,11 +4,6 @@
  * @returns {object} Un objeto con las funciones del controlador.
  */
 const AuthController = (authService) => {
-
-  /**
-   * @route POST /auth/register
-   * Registra un nuevo usuario.
-   */
   const register = async (req, res, next) => {
     const { name, email, password } = req.body;
 
@@ -24,10 +19,6 @@ const AuthController = (authService) => {
     }
   };
 
-  /**
-   * @route POST /auth/login
-   * Autentica a un usuario y devuelve un token.
-   */
   const login = async (req, res, next) => {
     const { email, password } = req.body;
 
@@ -45,8 +36,41 @@ const AuthController = (authService) => {
       } else {
         res
           .status(401)
-          .json({ success: false, error: "Correo o contraseña incorrectos." });
+          .json({ success: false, error: "Email o contraseña incorrectos" });
       }
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  const getUserById = async (req, res, next) => {
+    try {
+      const user = await authService.getUserById(req.params.id);
+      res.status(200).json({ success: true, data: user });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  const updateUser = async (req, res, next) => {
+    try {
+      await authService.updateUser(req.params.id, req.body);
+      res.status(200).json({
+        success: true,
+        message: "Usuario actualizado correctamente.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  const deleteUser = async (req, res, next) => {
+    try {
+      await authService.deleteUser(req.params.id);
+      res.status(200).json({
+        success: true,
+        message: "Usuario eliminado exitosamente.",
+      });
     } catch (error) {
       next(error);
     }
@@ -55,6 +79,9 @@ const AuthController = (authService) => {
   return {
     register,
     login,
+    getUserById,
+    updateUser,
+    deleteUser
   };
 };
 

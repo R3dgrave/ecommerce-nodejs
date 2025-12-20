@@ -75,7 +75,7 @@ const BrandController = (brandService) => {
       const id = req.params.id;
       const model = req.body;
       await brandService.updateBrand(id, model);
-      res.status(200).json({ success: true, message: "Marca actualizada" });
+      res.status(200).json({ success: true, message: "Marca actualizada exitosamente." });
     } catch (error) {
       next(error);
     }
@@ -89,7 +89,7 @@ const BrandController = (brandService) => {
     try {
       const id = req.params.id;
       await brandService.deleteBrand(id);
-      res.status(200).json({ success: true, message: "eliminado" });
+      res.status(200).json({ success: true, message: "Marca eliminada correctamente." });
     } catch (error) {
       next(error);
     }

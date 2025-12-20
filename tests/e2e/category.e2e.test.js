@@ -115,7 +115,6 @@ describe("E2E Category Routes (Real DB)", () => {
 
       expect(response.statusCode).toBe(200);
 
-      // Verificar en la base de datos
       const updatedCat = await Category.findById(createdCategoryId);
       expect(updatedCat.name).toBe("computing");
     });
@@ -129,7 +128,7 @@ describe("E2E Category Routes (Real DB)", () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.statusCode).toBe(200);
-      expect(response.body.message).toBe('Eliminado');
+      expect(response.body.message).toBe('Categoría eliminada correctamente');
 
       const checkInDb = await Category.findById(createdCategoryId);
       expect(checkInDb).toBeNull();

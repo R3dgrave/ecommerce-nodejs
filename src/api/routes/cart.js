@@ -9,8 +9,8 @@ module.exports = function (cartService, verifyToken) {
   const cartController = CartControllerFactory(cartService);
 
   router.get("/", verifyToken, cartController.getCart);
-  router.post("/add", validateAddItem, verifyToken, cartController.addItem);
-  router.delete("/remove/:productId", validateRemoveItem, verifyToken, cartController.removeItem);
+  router.post("/add", verifyToken, validateAddItem, cartController.addItem);
+  router.delete("/remove/:productId", verifyToken, validateRemoveItem, cartController.removeItem);
   router.delete("/clear", verifyToken, cartController.clearCart);
 
   return router;

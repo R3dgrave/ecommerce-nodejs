@@ -43,7 +43,8 @@ const validateCreateProduct = [
     .withMessage("La descripción corta no puede exceder los 200 caracteres."),
 
   body("description")
-    .optional()
+    .exists()
+    .notEmpty()
     .isString()
     .withMessage("La descripción debe ser texto."),
 

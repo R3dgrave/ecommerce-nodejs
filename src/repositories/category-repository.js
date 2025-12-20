@@ -8,19 +8,6 @@ class CategoryRepository extends BaseRepository {
   constructor(CategoryModel) {
     super(CategoryModel);
   }
-
-  async updateByUserId(userId, updateData) {
-    let cart = await this.Model.findOne({ userId });
-
-    if (!cart) {
-      cart = new this.Model({ userId, ...updateData });
-    } else {
-      Object.assign(cart, updateData);
-    }
-    await cart.save();
-
-    return this._toPlainObject(cart);
-  }
 }
 
 module.exports = CategoryRepository;

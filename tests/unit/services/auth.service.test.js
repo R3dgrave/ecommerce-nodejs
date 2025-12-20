@@ -6,6 +6,9 @@ const { ConflictError } = require("../../../src/repositories/base-repository");
 const mockUserRepository = {
   findByEmail: sinon.stub(),
   save: sinon.stub(),
+  findById: sinon.stub(),
+  update: sinon.stub(),
+  delete: sinon.stub(),
 };
 
 const mockTokenProvider = {
@@ -67,7 +70,10 @@ describe("AuthService", () => {
 
       mockUserRepository.save.rejects(conflictError);
 
-      await expect(authService.registerUser(userData)).rejects.toHaveProperty('status', 409);
+      await expect(authService.registerUser(userData)).rejects.toHaveProperty(
+        "status",
+        409
+      );
     });
   });
 
@@ -116,6 +122,56 @@ describe("AuthService", () => {
       expect(result).toBeNull();
       expect(bcrypt.compare.calledOnce).toBe(true);
       expect(mockTokenProvider.generate.called).toBe(false);
+    });
+  });
+
+  describe("getUserById", () => {
+    it("debería retornar el usuario sin el password", async () => {
+      mockUserRepository.findById
+        .withArgs("123")
+        .resolves({ ...testUser, password: "secret_password" });
+
+      const result = await authService.getUserById("123");
+
+      expect(result.password).toBeUndefined();
+      expect(result.email).toBe(testUser.email);
+    });
+
+    it("debería lanzar 404 si el usuario no existe", async () => {
+      mockUserRepository.findById.resolves(null);
+      await expect(authService.getUserById("999")).rejects.toHaveProperty(
+        "status",
+        404
+      );
+    });
+  });
+
+  describe("updateUser", () => {
+    it("debería hashear el password si se incluye en el update", async () => {
+      const updateData = { password: "new_password", name: "Updated Name" };
+      mockUserRepository.update.resolves(true);
+
+      await authService.updateUser("123", updateData);
+
+      expect(bcrypt.hash.calledOnce).toBe(true);
+      const passedData = mockUserRepository.update.firstCall.args[1];
+      expect(passedData.password).toBe("new-hashed-password");
+    });
+  });
+
+  describe("deleteUser", () => {
+    it("debería llamar al repositorio y retornar éxito", async () => {
+      mockUserRepository.delete.resolves(true);
+      const result = await authService.deleteUser("123");
+      expect(result).toBe(true);
+    });
+
+    it("debería lanzar 404 si no hay nada que borrar", async () => {
+      mockUserRepository.delete.resolves(false);
+      await expect(authService.deleteUser("999")).rejects.toHaveProperty(
+        "status",
+        404
+      );
     });
   });
 });

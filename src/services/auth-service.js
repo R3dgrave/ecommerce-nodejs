@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const { CustomError } = require("../utils/errors");
-const { ConflictError } = require('../repositories/base-repository');
+const { ConflictError } = require("../repositories/base-repository");
 
 /**
  * Clase que contiene la lógica de negocio de la autenticación.
@@ -31,10 +31,11 @@ class AuthService {
         email: user.email,
         isAdmin: user.isAdmin || false,
       };
-
     } catch (error) {
       if (error instanceof ConflictError) {
-        const conflictError = new Error("El correo electrónico ya está registrado.");
+        const conflictError = new Error(
+          "El correo electrónico ya está registrado."
+        );
         conflictError.status = 409;
         throw conflictError;
       }
@@ -77,6 +78,36 @@ class AuthService {
     } catch (error) {
       throw new CustomError("Fallo interno en la autenticación.", 500);
     }
+  }
+
+  async getUserById(id) {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      const error = new Error("Usuario no encontrado.");
+      error.status = 404;
+      throw error;
+    }
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  async updateUser(id, updateData) {
+    if (updateData.password) {
+      const saltRounds = 10;
+      updateData.password = await bcrypt.hash(updateData.password, saltRounds);
+    }
+
+    return await this.userRepository.update(id, updateData);
+  }
+
+  async deleteUser(id) {
+    const deleted = await this.userRepository.delete(id);
+    if (!deleted) {
+      const error = new Error("Usuario no encontrado.");
+      error.status = 404;
+      throw error;
+    }
+    return deleted;
   }
 }
 

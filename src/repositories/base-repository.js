@@ -104,7 +104,7 @@ class BaseRepository {
       data: this._toPlainObjectArray(documents),
       totalCount,
       totalPages,
-      currentPage: page,
+      page,
     };
   }
 }

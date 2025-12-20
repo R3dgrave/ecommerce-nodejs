@@ -1,5 +1,5 @@
-const { BaseRepository } = require('./base-repository');
-const CartModel = require('../models/cart');
+const { BaseRepository } = require("./base-repository");
+const CartModel = require("../models/cart");
 
 class CartRepository extends BaseRepository {
   constructor(Cart = CartModel) {
@@ -8,23 +8,23 @@ class CartRepository extends BaseRepository {
 
   /**
    * @private
-   * Aplica población al carrito. 
+   * Aplica población al carrito.
    * Nota: Usamos población anidada para los productos dentro de los items.
    */
   _applyPopulate(query, populateOptions = {}) {
     if (populateOptions.populateProducts) {
       query = query.populate({
-        path: 'items.productId',
-        select: 'name price images stock'
+        path: "items.productId",
+        select: "name price images stock",
       });
     }
 
     if (populateOptions.populateUser) {
-      query = query.populate('userId', 'name email');
+      query = query.populate("userId", "name email");
     }
 
     if (Object.keys(populateOptions).length === 0) {
-      query = query.populate('items.productId');
+      query = query.populate("items.productId");
     }
 
     return query;
@@ -33,20 +33,23 @@ class CartRepository extends BaseRepository {
   /**
    * Obtiene el carrito de un usuario específico.
    */
-  async findByUserId(userId, options = {}) {
-    const query = this.Model.findOne({ userId });
-    if (options.populateProducts) {
-      query.populate('items.productId');
-    }
+  async findByUserId(userId, populateOptions = {}) {
+    let query = this.Model.findOne({ userId });
+    query = this._applyPopulate(query, populateOptions);
     return await query.exec();
   }
 
   async updateByUserId(userId, data) {
-    return await this.Model.findOneAndUpdate(
-      { userId },
-      { $set: data },
-      { new: true, upsert: true }
-    ).populate('items.productId');
+    let cart = await this.Model.findOne({ userId });
+
+    if (!cart) {
+      cart = new this.Model({ userId, ...data });
+    } else {
+      Object.assign(cart, data);
+    }
+    await cart.save();
+
+    return this.findByUserId(userId, { populateProducts: true });
   }
 
   async save(data) {

@@ -5,14 +5,20 @@ class CartService {
   }
 
   /**
-   * Obtiene el carrito del usuario. 
+   * Obtiene el carrito del usuario.
    * Si no existe, crea uno vacío automáticamente para facilitar el flujo del frontend.
    */
   async getCartByUserId(userId) {
-    let cart = await this.cartRepository.findByUserId(userId, { populateProducts: true });
+    let cart = await this.cartRepository.findByUserId(userId, {
+      populateProducts: true,
+    });
 
     if (!cart) {
-      cart = await this.cartRepository.save({ userId, items: [], totalAmount: 0 });
+      cart = await this.cartRepository.save({
+        userId,
+        items: [],
+        totalAmount: 0,
+      });
     }
 
     return cart;
@@ -24,18 +30,23 @@ class CartService {
   async addItemToCart(userId, productId, quantity = 1) {
     const product = await this.productRepository.findById(productId);
     if (!product) throw this._createError("Producto no encontrado", 404);
-    if (product.stock < quantity) throw this._createError("Stock insuficiente", 400);
+    if (product.stock < quantity)
+      throw this._createError("Stock insuficiente", 400);
 
-    let cart = await this.cartRepository.findByUserId(userId);
+    let cart = await this.cartRepository.findByUserId(userId, {
+      populateProducts: false,
+    });
+
     const items = cart ? [...cart.items] : [];
 
     const existingItemIndex = items.findIndex(
-      item => item.productId.toString() === productId.toString()
+      (item) => item.productId.toString() === productId.toString()
     );
 
     if (existingItemIndex > -1) {
       const newQuantity = items[existingItemIndex].quantity + quantity;
-      if (product.stock < newQuantity) throw this._createError("Stock total excedido", 400);
+      if (product.stock < newQuantity)
+        throw this._createError("Stock total excedido", 400);
 
       items[existingItemIndex].quantity = newQuantity;
       items[existingItemIndex].price = product.price;
@@ -60,7 +71,7 @@ class CartService {
     if (!cart) return null;
 
     const items = cart.items.filter(
-      item => item.productId.toString() !== productId.toString()
+      (item) => item.productId.toString() !== productId.toString()
     );
 
     return await this.cartRepository.updateByUserId(userId, { items });

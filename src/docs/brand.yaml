@@ -183,3 +183,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /brand/categories/{categoryId}:
+    get:
+      summary: Obtiene marcas por categoría
+      tags: [Brands]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: categoryId
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Lista de marcas de la categoría
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  brands:
+                    type: array
+                    items: { $ref: "#/components/schemas/Brand" }

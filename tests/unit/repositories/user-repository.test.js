@@ -43,15 +43,12 @@ describe("UserRepository", () => {
 
   describe("findByEmail", () => {
     it("debería llamar a UserModel.findOne con el email correcto", async () => {
-
       const emailToFind = MOCK_USER_DATA.email;
 
       const result = await userRepository.findByEmail(emailToFind);
 
       expect(findOneStub.calledOnce).toBe(true);
-      expect(findOneStub.calledWith({ email: emailToFind })).toBe(
-        true
-      );
+      expect(findOneStub.calledWith({ email: emailToFind })).toBe(true);
       expect(result).toEqual(MOCK_SAVED_USER_RESULT);
     });
 
@@ -83,6 +80,36 @@ describe("UserRepository", () => {
         dbError
       );
       expect(UserModelMock.calledOnce).toBe(true);
+    });
+  });
+
+  describe("Herencia de BaseRepository", () => {
+    it("findById debería ejecutar findById del modelo", async () => {
+      const findByIdMock = {
+        exec: sinon.stub().resolves(MOCK_SAVED_USER_RESULT),
+      };
+      UserModelMock.findById = sinon.stub().returns(findByIdMock);
+
+      const result = await userRepository.findById("12345");
+      expect(UserModelMock.findById.calledWith("12345")).toBe(true);
+      expect(result._id).toBe("12345");
+    });
+
+    it("update debería ejecutar updateOne", async () => {
+      const updateResultMock = {
+        exec: sinon.stub().resolves({ matchedCount: 1, modifiedCount: 1 }),
+      };
+
+      UserModelMock.updateOne = sinon.stub().returns(updateResultMock);
+      await userRepository.update("12345", { name: "New Name" });
+
+      expect(UserModelMock.updateOne.calledOnce).toBe(true);
+      expect(
+        UserModelMock.updateOne.calledWith(
+          { _id: "12345" },
+          { name: "New Name" }
+        )
+      ).toBe(true);
     });
   });
 });

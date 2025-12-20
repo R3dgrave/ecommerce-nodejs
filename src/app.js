@@ -40,7 +40,7 @@ function createApp(dependencies) {
 
   // CREACIÓN DE MIDDLEWARES DE AUTENTICACIÓN/AUTORIZACIÓN(Estos middlewares necesitan el tokenProvider)
   const { verifyToken, isAdmin } = authMiddlewareFactory(tokenProvider);
-  app.use("/auth", authRoutesFactory(authService));
+  app.use("/auth", authRoutesFactory(authService, verifyToken));
   app.use("/category", categoryRoutesFactory(categoryService, verifyToken, isAdmin));
   app.use("/brand", brandRoutesFactory(brandService, verifyToken, isAdmin));
   app.use("/product", productRoutesFactory(productService, verifyToken, isAdmin));

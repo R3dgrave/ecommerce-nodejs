@@ -64,7 +64,7 @@ const CategoryController = (categoryService) => {
       await categoryService.updateCategory(id, model);
       res.status(200).json({
         success: true,
-        message: "Actualización de categoría exitosa",
+        message: "Categoría actualizada exitosamente",
       });
     } catch (error) {
       next(error);
@@ -79,7 +79,7 @@ const CategoryController = (categoryService) => {
     try {
       const id = req.params.id;
       await categoryService.deleteCategory(id);
-      res.status(200).json({ success: true, message: "Eliminado" });
+      res.status(200).json({ success: true, message: "Categoría eliminada correctamente" });
     } catch (error) {
       next(error);
     }
