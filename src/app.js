@@ -2,6 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const { swaggerUi, specs } = require("../config/swagger");
 
 // Importaciones de Middlewares y Routers
 const authMiddlewareFactory = require("./middlewares/auth-middleware");
@@ -46,6 +47,8 @@ function createApp(dependencies) {
   app.use("/cart", cartRoutesFactory(cartService, verifyToken));
 
   app.get("/", (req, res) => { res.send("Servidor funcionando correctamente."); });
+
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
   app.use(errorHandler);
 

@@ -1,0 +1,201 @@
+tags:
+  - name: Products
+    description: Gestión del catálogo de productos
+
+paths:
+  /product:
+    get:
+      summary: Lista productos con filtros y paginación
+      tags:
+        - Products
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: name
+          schema:
+            type: string
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+        - in: query
+          name: brandId
+          schema:
+            type: string
+      responses:
+        200:
+          description: Lista de productos obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+        400:
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      summary: Crea un nuevo producto (Solo Admin)
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+                - categoryId
+                - brandId
+                - stock
+                - shortDescription
+                - description
+              properties:
+                name: { type: string }
+                price: { type: number }
+                stock: { type: integer }
+                categoryId: { type: string }
+                brandId: { type: string }
+                shortDescription: { type: string }
+                description: { type: string }
+                discount: { type: number }
+                images:
+                  type: array
+                  items: { type: string }
+      responses:
+        201:
+          description: Producto creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        409:
+          description: Conflicto (ya existe un producto con ese nombre)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /product/{id}:
+    get:
+      summary: Obtiene el detalle de un producto por ID
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      summary: Actualiza un producto existente (Solo Admin)
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        200:
+          description: Producto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Datos inválidos o cuerpo vacío
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Marca o categoría no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        409:
+          description: Conflicto (nombre ya existe)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      summary: Elimina un producto (Solo Admin)
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Producto eliminado
+        400:
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

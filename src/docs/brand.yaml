@@ -1,0 +1,185 @@
+tags:
+  - name: Brands
+    description: Gestión de marcas y fabricantes
+
+paths:
+  /brand:
+    post:
+      summary: Crea una nueva marca
+      tags:
+        - Brands
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - categoryId
+              properties:
+                name: { type: string, example: "Adidas" }
+                categoryId: { type: string, example: "64f1a2b3c4d5e6f7" }
+      responses:
+        201:
+          description: Marca creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+        400:
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Categoría no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        409:
+          description: Ya existe una marca con este nombre
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      summary: Obtiene todas las marcas
+      tags:
+        - Brands
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: name
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        200:
+          description: Lista de marcas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandListResponse"
+        400:
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /brand/{id}:
+    get:
+      summary: Obtiene una marca por ID
+      tags:
+        - Brands
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Marca encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+        400:
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Marca no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      summary: Actualiza una marca existente
+      tags:
+        - Brands
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                categoryId: { type: string }
+      responses:
+        200:
+          description: Marca actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+        400:
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Marca o categoría no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        409:
+          description: Conflicto (nombre ya existe)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      summary: Elimina una marca
+      description: Solo se puede eliminar si no tiene productos asociados
+      tags:
+        - Brands
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Marca eliminada exitosamente
+        400:
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        409:
+          description: No se puede eliminar (tiene productos asociados)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

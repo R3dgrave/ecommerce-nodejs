@@ -1,0 +1,265 @@
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c0d1"
+        name:
+          type: string
+          example: "Juan Perez"
+        email:
+          type: string
+          example: "juan@example.com"
+        isAdmin:
+          type: boolean
+          example: false
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Usuario registrado exitosamente."
+        data:
+          $ref: "#/components/schemas/User"
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              example: "eyJhbGciOiJIUzI1Ni..."
+            user:
+              $ref: "#/components/schemas/User"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Mensaje de error descriptivo"
+        details:
+          type: array
+          description: "Presente solo en errores de validación (400)"
+          items:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: "El campo es requerido"
+              param:
+                type: string
+                example: "email"
+              location:
+                type: string
+                example: "body"
+
+    Brand:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c111"
+        name:
+          type: string
+          example: "Nike"
+        categoryId:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c0d1"
+
+    BrandResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        brand:
+          $ref: "#/components/schemas/Brand"
+
+    BrandListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        brands:
+          type: array
+          items:
+            $ref: "#/components/schemas/Brand"
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c0d1"
+        name:
+          type: string
+          example: "electronics"
+
+    CategoryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        result:
+          $ref: "#/components/schemas/Category"
+
+    CategoryListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        result:
+          type: object
+          properties:
+            docs:
+              type: array
+              items:
+                $ref: "#/components/schemas/Category"
+            totalDocs:
+              type: integer
+              example: 50
+            limit:
+              type: integer
+              example: 10
+            page:
+              type: integer
+              example: 1
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c222"
+        name:
+          type: string
+          example: "Zapatillas Running X"
+        shortDescription:
+          type: string
+          example: "Zapatillas ligeras para correr."
+        description:
+          type: string
+          example: "Descripción larga y detallada del producto..."
+        price:
+          type: number
+          example: 89.99
+        discount:
+          type: number
+          example: 10
+        stock:
+          type: integer
+          example: 50
+        categoryId:
+          oneOf:
+            - type: string
+            - $ref: "#/components/schemas/Category"
+        brandId:
+          oneOf:
+            - type: string
+            - $ref: "#/components/schemas/Brand"
+        images:
+          type: array
+          items:
+            type: string
+        isFeatured:
+          type: boolean
+        isNewProduct:
+          type: boolean
+
+    ProductResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operación realizada correctamente"
+        result:
+          $ref: "#/components/schemas/Product"
+
+    ProductListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Lista de productos obtenida"
+        result:
+          type: object
+          properties:
+            docs:
+              type: array
+              items:
+                $ref: "#/components/schemas/Product"
+            totalDocs:
+              type: integer
+              example: 100
+            totalPages:
+              type: integer
+              example: 10
+            page:
+              type: integer
+              example: 1
+
+    CartItem:
+      type: object
+      properties:
+        productId:
+          oneOf:
+            - type: string
+            - $ref: "#/components/schemas/Product"
+        quantity:
+          type: integer
+          example: 2
+        price:
+          type: number
+          example: 45.5
+
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c333"
+        userId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        totalAmount:
+          type: number
+          example: 91.0
+
+    CartResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operación realizada correctamente"
+        result:
+          $ref: "#/components/schemas/Cart"

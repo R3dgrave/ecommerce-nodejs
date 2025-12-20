@@ -1,0 +1,118 @@
+tags:
+  - name: Cart
+    description: Gestión del carrito de compras del usuario
+
+paths:
+  /cart:
+    get:
+      summary: Obtiene el carrito del usuario autenticado
+      tags:
+        - Cart
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Carrito obtenido (si no existía, se crea uno vacío)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartResponse"
+        400:
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cart/add:
+    post:
+      summary: Añade un producto al carrito
+      description: Si el producto ya existe, incrementa la cantidad. Valida stock disponible.
+      tags:
+        - Cart
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+              properties:
+                productId: { type: string, example: "64f1a2b3c4d5e6f7" }
+                quantity: { type: integer, minimum: 1, example: 1 }
+      responses:
+        200:
+          description: Producto añadido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartResponse"
+        400:
+          description: Stock insuficiente o cantidad inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cart/remove/{productId}:
+    delete:
+      summary: Elimina un producto específico del carrito
+      tags:
+        - Cart
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Producto eliminado del carrito
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartResponse"
+        400:
+          description: ID inválido o error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Producto no encontrado en el carrito
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cart/clear:
+    delete:
+      summary: Vacía completamente el carrito
+      tags:
+        - Cart
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Carrito vaciado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartResponse"
+        400:
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

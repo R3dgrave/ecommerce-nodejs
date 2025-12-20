@@ -24,7 +24,6 @@ const validateOptionalMongoIdBody = (fieldName) =>
     .isMongoId()
     .withMessage(`${fieldName} debe ser un ID de MongoDB válido.`);
 
-
 // --- Validación para Creación de Producto (POST /product) ---
 const validateCreateProduct = [
   body("name")
@@ -35,6 +34,18 @@ const validateCreateProduct = [
     .trim()
     .notEmpty()
     .withMessage("El nombre del producto es requerido."),
+
+  body("shortDescription")
+    .trim()
+    .notEmpty()
+    .withMessage("La descripción corta es requerida.")
+    .isLength({ max: 200 })
+    .withMessage("La descripción corta no puede exceder los 200 caracteres."),
+
+  body("description")
+    .optional()
+    .isString()
+    .withMessage("La descripción debe ser texto."),
 
   body("price")
     .exists()
@@ -50,22 +61,25 @@ const validateCreateProduct = [
     .isInt({ min: 0 })
     .withMessage("El stock debe ser un número entero positivo o cero."),
 
-  body("description")
-    .optional()
-    .isString()
-    .withMessage("La descripción debe ser texto."),
-
   handleValidationErrors,
 ];
-
 
 // --- Validación para Actualización de Producto (PUT /product/:id) ---
 const validateUpdateProduct = [
   validateId,
   requireNonEmptyBody,
-
-  // Todos los campos son opcionales, pero si están presentes, deben ser válidos
   createOptionalNameValidationRule("producto"),
+
+  body("shortDescription")
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage("La descripción corta no puede exceder los 200 caracteres."),
+
+  body("description")
+    .optional()
+    .isString()
+    .withMessage("La descripción debe ser texto."),
 
   body("price")
     .optional()
@@ -77,17 +91,11 @@ const validateUpdateProduct = [
     .isInt({ min: 0 })
     .withMessage("El stock debe ser un número entero positivo o cero."),
 
-  body("description")
-    .optional()
-    .isString()
-    .withMessage("La descripción debe ser texto."),
-
   validateOptionalMongoIdBody("categoryId"),
   validateOptionalMongoIdBody("brandId"),
 
   handleValidationErrors,
 ];
-
 
 // --- Validación para Paginación de Productos (GET /product) ---
 const validatePagination = [
