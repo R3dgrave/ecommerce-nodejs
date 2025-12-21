@@ -45,7 +45,6 @@ describe("E2E: Cart Flow", () => {
   });
 
   afterAll(async () => {
-    await Cart.deleteMany({});
     await closeDatabase();
   });
 

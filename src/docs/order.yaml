@@ -1,0 +1,104 @@
+tags:
+  - name: Orders
+    description: Gestión de pedidos y checkout de usuarios
+
+paths:
+  /order:
+    post:
+      summary: Crear una nueva orden (Checkout)
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - shippingAddress
+              properties:
+                shippingAddress:
+                  $ref: "#/components/schemas/ShippingAddress"
+      responses:
+        201:
+          description: Orden creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        400:
+          description: Error de validación, carrito vacío o stock insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        401:
+          description: No autorizado (Token faltante o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      summary: Obtiene las órdenes del usuario autenticado
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+      responses:
+        200:
+          description: Lista de órdenes recuperada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderListResponse"
+        401:
+          description: No autorizado
+
+  /order/{id}:
+    get:
+      summary: Obtiene el detalle de una orden específica por ID
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Detalles de la orden obtenidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+        403:
+          description: Prohibido (La orden no pertenece al usuario)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        404:
+          description: Orden no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

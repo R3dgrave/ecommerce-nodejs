@@ -63,12 +63,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (mongoose.connection.readyState === 1) {
-    await ProductModel.deleteMany({});
-    await BrandModel.deleteMany({ name: MOCK_BRAND_NAME });
-    await CategoryModel.deleteMany({ name: MOCK_CATEGORY_NAME });
-    await userRepository.deleteByEmail(MOCK_ADMIN_USER.email);
-  }
   await closeDatabase();
 });
 

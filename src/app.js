@@ -12,6 +12,7 @@ const brandRoutesFactory = require("./api/routes/brand");
 const categoryRoutesFactory = require("./api/routes/category");
 const productRoutesFactory = require("./api/routes/product");
 const cartRoutesFactory = require("./api/routes/cart");
+const orderRoutesFactory = require("./api/routes/order");
 
 const app = express();
 
@@ -35,6 +36,7 @@ function createApp(dependencies) {
     brandService,
     productService,
     cartService,
+    orderService,
     tokenProvider,
   } = dependencies;
 
@@ -45,6 +47,7 @@ function createApp(dependencies) {
   app.use("/brand", brandRoutesFactory(brandService, verifyToken, isAdmin));
   app.use("/product", productRoutesFactory(productService, verifyToken, isAdmin));
   app.use("/cart", cartRoutesFactory(cartService, verifyToken));
+  app.use("/order", orderRoutesFactory(orderService, verifyToken));
 
   app.get("/", (req, res) => { res.send("Servidor funcionando correctamente."); });
 
