@@ -1,15 +1,8 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const {
-  app,
-  closeDatabase,
-  cleanDatabase
-} = require("./setup.e2e");
+const { app, closeDatabase, cleanDatabase } = require("./setup.e2e");
 
-const Product = require('../../src/models/product');
-const Category = require('../../src/models/category');
-const Brand = require('../../src/models/brand');
-const User = require('../../src/models/user');
+const User = require("../../src/models/user");
 
 let adminToken;
 let existingCategoryId;
@@ -30,7 +23,7 @@ const MOCK_ADMIN_USER = {
 beforeAll(async () => {
   await cleanDatabase();
 
-  await request(app).post('/auth/register').send(MOCK_ADMIN_USER);
+  await request(app).post("/auth/register").send(MOCK_ADMIN_USER);
   const user = await User.findOne({ email: MOCK_ADMIN_USER.email });
 
   user.isAdmin = true;
@@ -44,19 +37,23 @@ beforeAll(async () => {
   adminToken = loginRes.body.data.token;
 
   const catRes = await request(app)
-    .post('/category')
-    .set('Authorization', `Bearer ${adminToken}`)
-    .send({ name: 'electronics product test' });
+    .post("/category")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({ name: "electronics product test" });
 
   existingCategoryId = catRes.body.result._id || catRes.body.result.id;
 
   const brandRes = await request(app)
-    .post('/brand')
-    .set('Authorization', `Bearer ${adminToken}`)
-    .send({ name: 'sony product test', categoryId: existingCategoryId });
+    .post("/brand")
+    .set("Authorization", `Bearer ${adminToken}`)
+    .send({ name: "sony product test", categoryId: existingCategoryId });
 
   if (!brandRes.body.result) {
-    throw new Error(`Fallo setup Producto: No se pudo crear la marca. Error: ${JSON.stringify(brandRes.body)}`);
+    throw new Error(
+      `Fallo setup Producto: No se pudo crear la marca. Error: ${JSON.stringify(
+        brandRes.body
+      )}`
+    );
   }
 
   existingBrandId = brandRes.body.result._id || brandRes.body.result.id;
@@ -66,13 +63,12 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-// --- Tests Principales ---
 describe("E2E: /product routes", () => {
   const productData = {
     name: MOCK_PRODUCT_NAME,
     price: 499.99,
     stock: 50,
-    shortDescription: 'Un resumen de la consola de juegos de nueva generación.',
+    shortDescription: "Un resumen de la consola de juegos de nueva generación.",
     description: "Next-gen gaming console.",
     categoryId: null,
     brandId: null,
@@ -140,7 +136,9 @@ describe("E2E: /product routes", () => {
         .send(invalidData);
 
       expect(res.statusCode).toBe(404);
-      expect(res.body.error).toMatch(/La CategoryId .* proporcionada no existe/);
+      expect(res.body.error).toMatch(
+        /La CategoryId .* proporcionada no existe/
+      );
     });
   });
 
@@ -292,9 +290,7 @@ describe("E2E: /product routes", () => {
 
       expect(res.statusCode).toBe(404);
       expect(res.body.success).toBe(false);
-      expect(res.body.error).toMatch(
-        /Producto con ID .* no encontrado./
-      );
+      expect(res.body.error).toMatch(/Producto con ID .* no encontrado./);
     });
   });
 });

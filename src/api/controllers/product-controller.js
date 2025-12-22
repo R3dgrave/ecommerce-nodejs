@@ -1,5 +1,4 @@
 const ProductController = (productService) => {
-
   /**
    * @route POST /product
    * Crea un nuevo producto (Admin only).
@@ -29,12 +28,15 @@ const ProductController = (productService) => {
 
       const populateOptions = { populateBrand: true, populateCategory: true };
 
-      const result = await productService.getAllProducts(queryParams, populateOptions);
+      const result = await productService.getAllProducts(
+        queryParams,
+        populateOptions
+      );
 
       res.status(200).json({
         success: true,
         message: "Productos obtenidos exitosamente.",
-        result: result // Contiene data, totalCount, totalPages, etc.
+        result: result, // Contiene data, totalCount, totalPages, etc.
       });
     } catch (error) {
       next(error);

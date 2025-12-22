@@ -9,6 +9,7 @@ const BrandRepositoryClass = require("../../src/repositories/brand-repository");
 const ProductRepositoryClass = require("../../src/repositories/product-repository");
 const CartRepositoryClass = require("../../src/repositories/cart-repository");
 const OrderRepositoryClass = require("../../src/repositories/order-repository");
+const PaymentRepositoryClass = require("../../src/repositories/payment-repository");
 
 // Servicios
 const AuthServiceClass = require("../../src/services/auth-service");
@@ -17,6 +18,7 @@ const BrandServiceClass = require("../../src/services/brand-service");
 const ProductServiceClass = require("../../src/services/product-service");
 const CartServiceClass = require("../../src/services/cart-service");
 const OrderServiceClass = require("../../src/services/order-service");
+const PaymentServiceClass = require("../../src/services/payment-service");
 
 // Modelos
 const UserModel = require("../../src/models/user");
@@ -25,6 +27,7 @@ const BrandModel = require("../../src/models/brand");
 const ProductModel = require("../../src/models/product");
 const CartModel = require("../../src/models/cart");
 const OrderModel = require("../../src/models/order");
+const PaymentModel = require("../../src/models/payment");
 
 const TokenProviderClass = require("../../src/providers/token-provider");
 const config = require("../../config/index");
@@ -36,6 +39,7 @@ const brandRepository = new BrandRepositoryClass(BrandModel);
 const productRepository = new ProductRepositoryClass(ProductModel);
 const cartRepository = new CartRepositoryClass(CartModel);
 const orderRepository = new OrderRepositoryClass(OrderModel);
+const paymentRepository = new PaymentRepositoryClass(PaymentModel);
 
 const tokenProvider = new TokenProviderClass(
   config.jwtSecret || "default-secret-test"
@@ -73,6 +77,13 @@ const orderService = new OrderServiceClass(
   productRepository
 );
 
+// --- AGREGADO: Instanciación de PaymentService ---
+const paymentService = new PaymentServiceClass(
+  paymentRepository,
+  orderRepository,
+  productRepository
+);
+
 // --- Inicialización de Express ---
 const app = createApp({
   authService,
@@ -81,6 +92,7 @@ const app = createApp({
   productService,
   cartService,
   orderService,
+  paymentService,
   tokenProvider,
 });
 
@@ -101,6 +113,7 @@ const cleanDatabase = async () => {
     await collections[key].deleteMany({});
   }
 };
+
 // Exportaciones para uso en los archivos .test.js
 module.exports = {
   app,
@@ -110,9 +123,14 @@ module.exports = {
   userRepository,
   productRepository,
   cartRepository,
+  orderRepository,
+  paymentRepository,
+  
   UserModel,
   CategoryModel,
   BrandModel,
   ProductModel,
   CartModel,
+  OrderModel,
+  PaymentModel,
 };

@@ -1,4 +1,4 @@
-const { ConflictError } = require('../repositories/base-repository');
+const { ConflictError } = require("../repositories/base-repository");
 
 class ProductService {
   constructor(productRepository, categoryRepository, brandRepository) {
@@ -16,7 +16,9 @@ class ProductService {
     if (categoryId) {
       const category = await this.categoryRepository.findById(categoryId);
       if (!category) {
-        const error = new Error(`La CategoryId ${categoryId} proporcionada no existe.`);
+        const error = new Error(
+          `La CategoryId ${categoryId} proporcionada no existe.`
+        );
         error.status = 404;
         throw error;
       }
@@ -25,7 +27,9 @@ class ProductService {
     if (brandId) {
       const brand = await this.brandRepository.findById(brandId);
       if (!brand) {
-        const error = new Error(`La BrandId ${brandId} proporcionada no existe.`);
+        const error = new Error(
+          `La BrandId ${brandId} proporcionada no existe.`
+        );
         error.status = 404;
         throw error;
       }
@@ -46,7 +50,7 @@ class ProductService {
     const filter = {};
 
     if (name) {
-      filter.name = { $regex: new RegExp(name, 'i') };
+      filter.name = { $regex: new RegExp(name, "i") };
     }
 
     if (categoryId) {
@@ -62,8 +66,12 @@ class ProductService {
       page: parseInt(page, 10),
     };
 
-    // Se usa findWithPagination, pero se modifica en product-repository para que acepte las opciones de población. 
-    return this.productRepository.findWithPagination(filter, options, populateOptions);
+    // Se usa findWithPagination, pero se modifica en product-repository para que acepte las opciones de población.
+    return this.productRepository.findWithPagination(
+      filter,
+      options,
+      populateOptions
+    );
   }
 
   /**
@@ -97,7 +105,9 @@ class ProductService {
       return await this.productRepository.save(productData);
     } catch (error) {
       if (error instanceof ConflictError) {
-        const conflictError = new Error("Ya existe un producto con este nombre.");
+        const conflictError = new Error(
+          "Ya existe un producto con este nombre."
+        );
         conflictError.status = 409;
         throw conflictError;
       }
@@ -114,7 +124,9 @@ class ProductService {
       await this.productRepository.update(id, productData);
     } catch (error) {
       if (error instanceof ConflictError) {
-        const conflictError = new Error("Ya existe otro producto con ese nombre.");
+        const conflictError = new Error(
+          "Ya existe otro producto con ese nombre."
+        );
         conflictError.status = 409;
         throw conflictError;
       }

@@ -22,7 +22,14 @@ const orderSchema = new mongoose.Schema({
     enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
     default: 'pending'
   },
-  paymentId: String
+  paymentId: String,
+  statusHistory: [
+    {
+      status: String,
+      timestamp: { type: Date, default: Date.now },
+      comment: String
+    }
+  ]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

@@ -1,8 +1,6 @@
-// src/controllers/cart-controller.js
-
 /**
  * Factory Function para el controlador de Carrito.
- * @param {CartService} cartService 
+ * @param {CartService} cartService
  */
 const CartControllerFactory = (cartService) => {
   return {
@@ -20,11 +18,15 @@ const CartControllerFactory = (cartService) => {
       try {
         const userId = req.user.id;
         const { productId, quantity } = req.body;
-        const updatedCart = await cartService.addItemToCart(userId, productId, quantity);
+        const updatedCart = await cartService.addItemToCart(
+          userId,
+          productId,
+          quantity
+        );
         res.status(200).json({
           success: true,
           message: "Producto añadido al carrito",
-          result: updatedCart
+          result: updatedCart,
         });
       } catch (error) {
         next(error);
@@ -39,7 +41,7 @@ const CartControllerFactory = (cartService) => {
         res.status(200).json({
           success: true,
           message: "Producto eliminado del carrito",
-          result: updatedCart
+          result: updatedCart,
         });
       } catch (error) {
         next(error);
@@ -52,12 +54,12 @@ const CartControllerFactory = (cartService) => {
         await cartService.clearCart(userId);
         res.status(200).json({
           success: true,
-          message: "Carrito vaciado exitosamente"
+          message: "Carrito vaciado exitosamente",
         });
       } catch (error) {
         next(error);
       }
-    }
+    },
   };
 };
 

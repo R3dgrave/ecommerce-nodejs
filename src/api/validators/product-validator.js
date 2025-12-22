@@ -1,5 +1,3 @@
-// src/api/validators/product-validator.js
-
 const { body, query } = require("express-validator");
 const {
   handleValidationErrors,

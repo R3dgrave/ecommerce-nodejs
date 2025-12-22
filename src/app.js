@@ -13,6 +13,7 @@ const categoryRoutesFactory = require("./api/routes/category");
 const productRoutesFactory = require("./api/routes/product");
 const cartRoutesFactory = require("./api/routes/cart");
 const orderRoutesFactory = require("./api/routes/order");
+const paymentRoutesFactory = require("./api/routes/payment");
 
 const app = express();
 
@@ -25,9 +26,16 @@ const corsOptions = {
   credentials: true,
 };
 
+app.use(express.json({
+  verify: (req, res, buf) => {
+    if (req.originalUrl.includes('/payment/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
+
 app.use(morgan("dev"));
 app.use(cors(corsOptions));
-app.use(express.json());
 
 function createApp(dependencies) {
   const {
@@ -37,6 +45,7 @@ function createApp(dependencies) {
     productService,
     cartService,
     orderService,
+    paymentService,
     tokenProvider,
   } = dependencies;
 
@@ -48,6 +57,7 @@ function createApp(dependencies) {
   app.use("/product", productRoutesFactory(productService, verifyToken, isAdmin));
   app.use("/cart", cartRoutesFactory(cartService, verifyToken));
   app.use("/order", orderRoutesFactory(orderService, verifyToken));
+  app.use("/payment", paymentRoutesFactory(paymentService, verifyToken, isAdmin));
 
   app.get("/", (req, res) => { res.send("Servidor funcionando correctamente."); });
 

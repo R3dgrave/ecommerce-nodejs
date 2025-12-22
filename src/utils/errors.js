@@ -19,7 +19,7 @@ class UnauthorizedError extends CustomError {
   }
 }
 
-class BusinessLogicError extends CustomError {}
+class BusinessLogicError extends CustomError { }
 
 module.exports = {
   CustomError,

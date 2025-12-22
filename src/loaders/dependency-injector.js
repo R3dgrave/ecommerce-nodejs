@@ -1,4 +1,3 @@
-//src/loaders/dependency-injector.js
 const config = require("../../config/index");
 
 // Import Modelos (Mongoose)
@@ -8,6 +7,7 @@ const BrandModel = require("../models/brand");
 const ProductModel = require("../models/product");
 const CartModel = require("../models/cart");
 const OrderModel = require("../models/order");
+const PaymentModel = require("../models/payment")
 
 // Import Repositorios
 const UserRepository = require("../repositories/user-repository");
@@ -16,6 +16,7 @@ const BrandRepository = require("../repositories/brand-repository");
 const ProductRepository = require("../repositories/product-repository");
 const CartRepository = require("../repositories/cart-repository");
 const OrderRepository = require("../repositories/order-repository");
+const PaymentRepository = require("../repositories/payment-repository");
 
 // Import Providers
 const TokenProvider = require("../providers/token-provider");
@@ -27,6 +28,7 @@ const BrandServiceClass = require("../services/brand-service");
 const ProductServiceClass = require("../services/product-service");
 const CartServiceClass = require("../services/cart-service");
 const OrderServiceClass = require("../services/order-service");
+const PaymentServiceClass = require("../services/payment-service");
 
 /**
  * Instancia y enlaza todas las dependencias de la aplicación.
@@ -43,6 +45,7 @@ function dependencyInjectorLoader() {
   const productRepository = new ProductRepository(ProductModel);
   const cartRepository = new CartRepository(CartModel);
   const orderRepository = new OrderRepository(OrderModel);
+  const paymentRepository = new PaymentRepository(PaymentModel);
 
   // INSTANCIAR SERVICIOS (Necesitan Repositorios y/o Providers)
   const authService = new AuthServiceClass(userRepository, tokenProvider);
@@ -73,6 +76,12 @@ function dependencyInjectorLoader() {
     productRepository
   );
 
+  const paymentService = new PaymentServiceClass(
+    paymentRepository,
+    orderRepository,
+    productRepository
+  );
+
   // ENSAMBLAR Y RETORNAR EL CONTENEDOR FINAL
   const container = {
     // Servicios
@@ -82,6 +91,7 @@ function dependencyInjectorLoader() {
     productService,
     cartService,
     orderService,
+    paymentService,
 
     // Repositorios
     userRepository,
@@ -90,6 +100,7 @@ function dependencyInjectorLoader() {
     productRepository,
     cartRepository,
     orderRepository,
+    paymentRepository,
 
     // Providers
     tokenProvider,

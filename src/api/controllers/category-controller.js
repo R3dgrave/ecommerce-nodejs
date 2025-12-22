@@ -4,7 +4,6 @@
  * @returns {object} Un objeto con las funciones del controlador.
  */
 const CategoryController = (categoryService) => {
-
   /**
    * @route POST /category
    * Crea una nueva categoría.
@@ -79,7 +78,9 @@ const CategoryController = (categoryService) => {
     try {
       const id = req.params.id;
       await categoryService.deleteCategory(id);
-      res.status(200).json({ success: true, message: "Categoría eliminada correctamente" });
+      res
+        .status(200)
+        .json({ success: true, message: "Categoría eliminada correctamente" });
     } catch (error) {
       next(error);
     }

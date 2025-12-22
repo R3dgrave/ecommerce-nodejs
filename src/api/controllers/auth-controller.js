@@ -81,7 +81,7 @@ const AuthController = (authService) => {
     login,
     getUserById,
     updateUser,
-    deleteUser
+    deleteUser,
   };
 };
 

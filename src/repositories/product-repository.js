@@ -1,5 +1,5 @@
-const { BaseRepository } = require('./base-repository');
-const ProductModel = require('../models/product');
+const { BaseRepository } = require("./base-repository");
+const ProductModel = require("../models/product");
 
 class ProductRepository extends BaseRepository {
   constructor(Product = ProductModel) {
@@ -14,16 +14,15 @@ class ProductRepository extends BaseRepository {
    * @returns {mongoose.Query} - El query modificado.
    */
   _applyPopulate(query, populateOptions = {}) {
-
     if (populateOptions.populateBrand) {
-      query = query.populate('brandId', 'name categoryId');
+      query = query.populate("brandId", "name categoryId");
     }
     if (populateOptions.populateCategory) {
-      query = query.populate('categoryId', 'name');
+      query = query.populate("categoryId", "name");
     }
 
     if (Object.keys(populateOptions).length === 0) {
-      query = query.populate('categoryId brandId');
+      query = query.populate("categoryId brandId");
     }
     return query;
   }
@@ -104,6 +103,14 @@ class ProductRepository extends BaseRepository {
       totalPages,
       currentPage: page,
     };
+  }
+
+  async updateStock(productId, quantity) {
+    return await this.Model.findByIdAndUpdate(
+      productId,
+      { $inc: { stock: quantity } },
+      { new: true }
+    );
   }
 }
 

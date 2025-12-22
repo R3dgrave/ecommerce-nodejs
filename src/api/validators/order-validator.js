@@ -1,4 +1,3 @@
-// src/validators/order-validator.js
 const { body } = require("express-validator");
 const { handleValidationErrors, validateId } = require("../../middlewares/validation-utils");
 

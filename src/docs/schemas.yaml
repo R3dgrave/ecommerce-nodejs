@@ -1,127 +1,89 @@
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
+    # --- USUARIOS ---
     User:
       type: object
       properties:
-        id:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c0d1"
-        name:
-          type: string
-          example: "Juan Perez"
-        email:
-          type: string
-          example: "juan@example.com"
-        isAdmin:
-          type: boolean
-          example: false
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c0d1" }
+        name: { type: string, example: "Juan Perez" }
+        email: { type: string, example: "juan@example.com" }
+        isAdmin: { type: boolean, example: false }
 
     RegisterResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: "Usuario registrado exitosamente."
-        data:
-          $ref: "#/components/schemas/User"
+        success: { type: boolean, example: true }
+        message: { type: string, example: "Usuario registrado exitosamente." }
+        data: { $ref: "#/components/schemas/User" }
 
     LoginResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
+        success: { type: boolean, example: true }
         data:
           type: object
           properties:
-            token:
-              type: string
-              example: "eyJhbGciOiJIUzI1Ni..."
-            user:
-              $ref: "#/components/schemas/User"
+            token: { type: string, example: "eyJhbGciOiJIUzI1Ni..." }
+            user: { $ref: "#/components/schemas/User" }
 
     UserResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          $ref: "#/components/schemas/User"
+        success: { type: boolean, example: true }
+        data: { $ref: "#/components/schemas/User" }
 
+    # --- RESPUESTAS GENERALES ---
     GeneralResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: "Operación realizada con éxito"
+        success: { type: boolean, example: true }
+        message: { type: string, example: "Operación realizada con éxito" }
 
     ErrorResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: false
-        error:
-          type: string
-          example: "Mensaje de error descriptivo"
+        success: { type: boolean, example: false }
+        error: { type: string, example: "Mensaje de error descriptivo" }
         details:
           type: array
           description: "Presente solo en errores de validación (400)"
           items:
             type: object
             properties:
-              msg:
-                type: string
-                example: "El campo es requerido"
-              param:
-                type: string
-                example: "email"
-              location:
-                type: string
-                example: "body"
+              msg: { type: string, example: "El campo es requerido" }
+              param: { type: string, example: "email" }
+              location: { type: string, example: "body" }
 
+    # --- CATÁLOGO ---
     Brand:
       type: object
       properties:
-        id:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c111"
-        name:
-          type: string
-          example: "Nike"
-        categoryId:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c0d1"
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c111" }
+        name: { type: string, example: "Nike" }
+        categoryId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c0d1" }
 
     BrandResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
-        brand:
-          $ref: "#/components/schemas/Brand"
+        success: { type: boolean, example: true }
+        brand: { $ref: "#/components/schemas/Brand" }
 
     BrandListResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
+        success: { type: boolean, example: true }
         result:
           type: object
           properties:
             data:
               type: array
-              items:
-                $ref: "#/components/schemas/Brand"
+              items: { $ref: "#/components/schemas/Brand" }
             totalCount: { type: integer, example: 10 }
             totalPages: { type: integer, example: 1 }
             currentPage: { type: integer, example: 1 }
@@ -129,128 +91,65 @@ components:
     Category:
       type: object
       properties:
-        id:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c0d1"
-        name:
-          type: string
-          example: "electronics"
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c0d1" }
+        name: { type: string, example: "electronics" }
 
     CategoryResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
-        result:
-          $ref: "#/components/schemas/Category"
+        success: { type: boolean, example: true }
+        result: { $ref: "#/components/schemas/Category" }
 
     CategoryListResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
+        success: { type: boolean, example: true }
         result:
           type: object
           properties:
             data:
               type: array
-              items:
-                $ref: "#/components/schemas/Category"
-            totalCount:
-              type: integer
-              example: 50
-            limit:
-              type: integer
-              example: 10
-            page:
-              type: integer
-              example: 1
-            totalPages:
-              type: integer
-              example: 5
+              items: { $ref: "#/components/schemas/Category" }
+            totalCount: { type: integer, example: 50 }
+            totalPages: { type: integer, example: 5 }
 
     Product:
       type: object
       properties:
-        id:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c222"
-        name:
-          type: string
-          example: "Zapatillas Running X"
-        shortDescription:
-          type: string
-          example: "Zapatillas ligeras para correr."
-        description:
-          type: string
-          example: "Descripción larga y detallada del producto..."
-        price:
-          type: number
-          example: 89.99
-        discount:
-          type: number
-          example: 10
-        stock:
-          type: integer
-          example: 50
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c222" }
+        name: { type: string, example: "Zapatillas Running X" }
+        price: { type: number, example: 89.99 }
+        stock: { type: integer, example: 50 }
         categoryId:
-          oneOf:
-            - type: string
-            - $ref: "#/components/schemas/Category"
+          {
+            oneOf:
+              [{ type: string }, { $ref: "#/components/schemas/Category" }],
+          }
         brandId:
-          oneOf:
-            - type: string
-            - $ref: "#/components/schemas/Brand"
-        images:
-          type: array
-          items:
-            type: string
-        isFeatured:
-          type: boolean
-        isNewProduct:
-          type: boolean
+          { oneOf: [{ type: string }, { $ref: "#/components/schemas/Brand" }] }
 
     ProductResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: "Operación realizada correctamente"
-        result:
-          $ref: "#/components/schemas/Product"
+        success: { type: boolean, example: true }
+        message: { type: string, example: "Operación realizada" }
+        result: { $ref: "#/components/schemas/Product" }
 
     ProductListResponse:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: "Lista de productos obtenida"
+        success: { type: boolean, example: true }
         result:
           type: object
           properties:
             data:
               type: array
-              items:
-                $ref: "#/components/schemas/Product"
-            totalCount:
-              type: integer
-              example: 100
-            totalPages:
-              type: integer
-              example: 10
-            page:
-              type: integer
-              example: 1
-            limit: { type: integer, example: 10 }
+              items: { $ref: "#/components/schemas/Product" }
+            totalCount: { type: integer, example: 100 }
+            totalPages: { type: integer, example: 10 }
+            page: { type: integer, example: 1 }
 
+    # --- ESQUEMAS DE CARRITO ---
     CartItem:
       type: object
       properties:
@@ -273,6 +172,7 @@ components:
           example: "64f1a2b3c4d5e6f7a8b9c333"
         userId:
           type: string
+          example: "64f1a2b3c4d5e6f7a8b9c0d1"
         items:
           type: array
           items:
@@ -281,6 +181,7 @@ components:
           type: number
           example: 91.0
 
+    # --- RESPUESTA ENVOLTORIO PARA CARRITO ---
     CartResponse:
       type: object
       properties:
@@ -291,70 +192,40 @@ components:
           type: string
           example: "Operación realizada correctamente"
         result:
-          $ref: "#/components/schemas/Cart"
+          $ref: "#/components/schemas/Cart"        
 
+    # --- PEDIDOS Y CARRITO ---
     OrderItem:
       type: object
       properties:
-        productId:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c222"
-        name:
-          type: string
-          example: "PlayStation 5"
-        price:
-          type: number
-          example: 499.99
-        quantity:
-          type: integer
-          example: 1
+        productId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c222" }
+        name: { type: string, example: "PlayStation 5" }
+        price: { type: number, example: 499.99 }
+        quantity: { type: integer, example: 1 }
 
     ShippingAddress:
       type: object
-      required:
-        - address
-        - city
-        - country
+      required: [address, city, country]
       properties:
-        address:
-          type: string
-          example: "Calle Principal 123"
-        city:
-          type: string
-          example: "Santiago"
-        country:
-          type: string
-          example: "Chile"
-        zipCode:
-          type: string
-          example: "8320000"
+        address: { type: string, example: "Calle Principal 123" }
+        city: { type: string, example: "Santiago" }
+        country: { type: string, example: "Chile" }
 
     Order:
       type: object
       properties:
-        id:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c444"
-        userId:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c0d1"
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c444" }
+        userId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c0d1" }
         items:
-          type: array
-          items:
-            $ref: "#/components/schemas/OrderItem"
-        totalAmount:
-          type: number
-          example: 499.99
-        shippingAddress:
-          $ref: "#/components/schemas/ShippingAddress"
+          { type: array, items: { $ref: "#/components/schemas/OrderItem" } }
+        totalAmount: { type: number, example: 499.99 }
+        shippingAddress: { $ref: "#/components/schemas/ShippingAddress" }
         status:
           type: string
           enum: [pending, paid, shipped, delivered, cancelled]
           example: "pending"
-        createdAt:
-          type: string
-          format: date-time
 
+    # --- RESPUESTAS DE ÓRDENES ---
     OrderResponse:
       type: object
       properties:
@@ -363,7 +234,7 @@ components:
           example: true
         message:
           type: string
-          example: "Orden creada exitosamente"
+          example: "Operación realizada con éxito"
         data:
           $ref: "#/components/schemas/Order"
 
@@ -392,4 +263,42 @@ components:
             page:
               type: string
               example: "1"
-              
+
+    # --- PAGOS (STRICTAMENTE SEGÚN TU CONTROLADOR) ---
+    PaymentIntentRequest:
+      type: object
+      required: [orderId]
+      properties:
+        orderId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c444" }
+
+    PaymentIntentResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            clientSecret: { type: string, example: "pi_3N4x5yL2eZv..." }
+            amount: { type: number, example: 499.99 }
+            currency: { type: string, example: "usd" }
+
+    RefundRequest:
+      type: object
+      required: [orderId]
+      properties:
+        orderId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c444" }
+        reason:
+          type: string
+          enum: [duplicate, fraudulent, requested_by_customer, abandoned]
+          example: "requested_by_customer"
+
+    RefundResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string, example: "Refund processed" }
+        data:
+          type: object
+          properties:
+            id: { type: string, example: "re_3N4x5yL2eZv..." }
+            status: { type: string, example: "succeeded" }

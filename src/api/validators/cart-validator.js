@@ -1,5 +1,4 @@
-// src/api/validators/cart-validator.js
-const { body, param } = require("express-validator");
+const { body } = require("express-validator");
 const {
   handleValidationErrors,
   createIdValidationRule,

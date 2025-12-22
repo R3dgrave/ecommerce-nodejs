@@ -5,7 +5,7 @@ const { validateAddItem, validateRemoveItem } = require("../validators/cart-vali
 
 module.exports = function (cartService, verifyToken) {
   const router = express.Router();
-  
+
   const cartController = CartControllerFactory(cartService);
 
   router.get("/", verifyToken, cartController.getCart);

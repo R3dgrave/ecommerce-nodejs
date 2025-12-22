@@ -16,7 +16,7 @@ class OrderController {
       return res.status(201).json({
         success: true,
         message: "Orden creada exitosamente",
-        data: order
+        data: order,
       });
     } catch (error) {
       next(error);
@@ -28,7 +28,7 @@ class OrderController {
       const userId = req.user.id;
       const options = {
         page: req.query.page,
-        limit: req.query.limit
+        limit: req.query.limit,
       };
 
       const orders = await this.orderService.getMyOrders(userId, options);
@@ -36,7 +36,7 @@ class OrderController {
       return res.status(200).json({
         success: true,
         message: "Órdenes recuperadas",
-        data: orders
+        data: orders,
       });
     } catch (error) {
       next(error);
@@ -53,7 +53,7 @@ class OrderController {
       return res.status(200).json({
         success: true,
         message: "Detalles de la orden",
-        data: order
+        data: order,
       });
     } catch (error) {
       next(error);
