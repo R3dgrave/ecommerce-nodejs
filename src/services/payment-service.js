@@ -21,7 +21,7 @@ class PaymentService {
     this.stripe =
       stripeClient ||
       new Stripe(
-        process.env.STRIPE_SECRET_KEY || "sk_test_4eC39HqLyjWDarjtT1zdp7dc"
+        process.env.STRIPE_SECRET_KEY
       );
   }
 
