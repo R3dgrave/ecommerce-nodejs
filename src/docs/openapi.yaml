@@ -711,6 +711,90 @@ paths:
         400:
           description: Error de firma o procesamiento del webhook
 
+  # --- CUSTOMER / PROFILE ---
+  /customer/profile:
+    get:
+      tags: [Customer]
+      summary: Obtener perfil del cliente
+      description: Retorna la información del usuario autenticado (sin password).
+      security: [{ bearerAuth: [] }]
+      responses:
+        200:
+          description: Perfil obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags: [Customer]
+      summary: Actualizar información del perfil
+      description: Permite actualizar nombre, teléfono o email. Protegido contra cambios de isAdmin.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerRequest'
+      responses:
+        200:
+          description: Perfil actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+
+  /customer/address:
+    post:
+      tags: [Customer]
+      summary: Agregar una nueva dirección de envío
+      description: Añade una dirección al array de direcciones del cliente.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Address'
+      responses:
+        200:
+          description: Dirección agregada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+
+  /customer/address/{addressId}:
+    delete:
+      tags: [Customer]
+      summary: Eliminar una dirección de envío
+      description: Elimina una dirección específica del array de direcciones del usuario.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: addressId
+          in: path
+          required: true
+          schema: { type: string }
+          description: ID único de la dirección (ObjectId)
+      responses:
+        200:
+          description: Dirección eliminada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
 components:
   #--- SECURITY SCHEMES ---
   securitySchemes:
@@ -1069,3 +1153,40 @@ components:
           type: object
           properties:
             publishableKey: { type: string, example: "pk_test_51Mz..." }
+
+  # --- CUSTOMER SCHEMAS ---
+    Address:
+      type: object
+      required: [street, city, zipCode]
+      properties:
+        street: { type: string, example: "Av. Principal 123" }
+        city: { type: string, example: "Madrid" }
+        state: { type: string, example: "Madrid" }
+        zipCode: { type: string, example: "28001" }
+        isDefault: { type: boolean, default: false }
+
+    CustomerProfile:
+      type: object
+      properties:
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c123" }
+        name: { type: string, example: "Juan Perez" }
+        email: { type: string, example: "juan@example.com" }
+        phone: { type: string, example: "+34600000000" }
+        shippingAddresses:
+          type: array
+          items: { $ref: '#/components/schemas/Address' }
+        isAdmin: { type: boolean, example: false }
+
+    UpdateCustomerRequest:
+      type: object
+      properties:
+        name: { type: string }
+        phone: { type: string }
+        email: { type: string, format: email }
+
+    CustomerResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/CustomerProfile' }          

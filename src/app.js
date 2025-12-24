@@ -1,10 +1,8 @@
-//src/app.js
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const { swaggerUi, specs } = require("../config/swagger");
 
-// Importaciones de Middlewares y Routers
 const errorHandler = require("./middlewares/error-middleware");
 const authRoutesFactory = require("./api/routes/auth");
 const brandRoutesFactory = require("./api/routes/brand");

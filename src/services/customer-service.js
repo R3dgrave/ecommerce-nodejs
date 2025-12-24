@@ -16,18 +16,20 @@ class CustomerService {
   async updateProfile(userId, updateData) {
     delete updateData.isAdmin;
     delete updateData.password;
+    delete updateData.shippingAddresses;
 
-    try {
-      return await this.userRepository.update(userId, updateData);
-    } catch (error) {
-      if (error.status === 404) throw new NotFoundError("Perfil no encontrado.");
-      throw error;
-    }
+    return await this.userRepository.update(userId, updateData);
   }
 
   async addAddress(userId, address) {
     return await this.userRepository.update(userId, {
       $push: { shippingAddresses: address }
+    });
+  }
+
+  async removeAddress(userId, addressId) {
+    return await this.userRepository.update(userId, {
+      $pull: { shippingAddresses: { _id: addressId } }
     });
   }
 }

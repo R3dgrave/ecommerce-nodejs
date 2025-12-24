@@ -1,7 +1,8 @@
 const { body } = require("express-validator");
 const {
   handleValidationErrors,
-  requireNonEmptyBody
+  requireNonEmptyBody,
+  createIdValidationRule,
 } = require("../../middlewares/validation-utils");
 
 const validateUpdateProfile = [
@@ -19,7 +20,13 @@ const validateAddress = [
   handleValidationErrors
 ];
 
+const validateAddressId = [
+  ...createIdValidationRule("addressId"), 
+  handleValidationErrors
+];
+
 module.exports = {
   validateUpdateProfile,
-  validateAddress
+  validateAddress,
+  validateAddressId
 };

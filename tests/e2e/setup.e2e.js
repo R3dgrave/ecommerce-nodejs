@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const { createApp } = require("../../src/app");
 const { databaseLoader, closeDatabase } = require("../../src/loaders/database");
 
-// Repositorios
 const UserRepositoryClass = require("../../src/repositories/user-repository");
 const CategoryRepositoryClass = require("../../src/repositories/category-repository");
 const BrandRepositoryClass = require("../../src/repositories/brand-repository");
@@ -11,7 +10,6 @@ const CartRepositoryClass = require("../../src/repositories/cart-repository");
 const OrderRepositoryClass = require("../../src/repositories/order-repository");
 const PaymentRepositoryClass = require("../../src/repositories/payment-repository");
 
-// Servicios
 const AuthServiceClass = require("../../src/services/auth-service");
 const CategoryServiceClass = require("../../src/services/category-service");
 const BrandServiceClass = require("../../src/services/brand-service");
@@ -21,10 +19,8 @@ const OrderServiceClass = require("../../src/services/order-service");
 const PaymentServiceClass = require("../../src/services/payment-service");
 const CustomerServiceClass = require("../../src/services/customer-service");
 
-// Middlewares
 const authMiddlewareFactory = require("../../src/middlewares/auth-middleware");
 
-// Modelos
 const UserModel = require("../../src/models/user");
 const CategoryModel = require("../../src/models/category");
 const BrandModel = require("../../src/models/brand");
@@ -36,7 +32,6 @@ const PaymentModel = require("../../src/models/payment");
 const TokenProviderClass = require("../../src/providers/token-provider");
 const config = require("../../config/index");
 
-// --- Instanciación de Repositorios ---
 const userRepository = new UserRepositoryClass(UserModel);
 const categoryRepository = new CategoryRepositoryClass(CategoryModel);
 const brandRepository = new BrandRepositoryClass(BrandModel);
@@ -49,10 +44,8 @@ const tokenProvider = new TokenProviderClass(
   config.jwtSecret || "default-secret-test"
 );
 
-// --- Instanciación de Middleware de Auth (Verificación por BD)
 const authMiddleware = authMiddlewareFactory(tokenProvider, userRepository);
 
-// --- Instanciación de Servicios ---
 const authService = new AuthServiceClass(userRepository, tokenProvider);
 const customerService = new CustomerServiceClass(userRepository);
 
@@ -91,7 +84,6 @@ const paymentService = new PaymentServiceClass(
   productRepository
 );
 
-// --- Inicialización de Express ---
 const app = createApp({
   authService,
   customerService,

@@ -1,8 +1,5 @@
 const { BaseRepository } = require('./base-repository');
 
-/**
- * Clase que encapsula todas las operaciones de acceso a datos para los usuarios.
- *  */
 class UserRepository extends BaseRepository {
   constructor(UserModel) {
     super(UserModel);
@@ -24,7 +21,6 @@ class UserRepository extends BaseRepository {
   async deleteByEmail(email) {
     return this.deleteMany({ email: email });
   }
-
 }
 
 module.exports = UserRepository;
