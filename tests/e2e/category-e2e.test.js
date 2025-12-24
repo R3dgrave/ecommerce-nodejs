@@ -1,6 +1,6 @@
 const request = require("supertest");
 const mongoose = require('mongoose');
-const { app, closeDatabase, cleanDatabase, CategoryModel, UserModel } = require("./setup.e2e");
+const { app, closeDatabase, cleanDatabase, CategoryModel, UserModel } = require("./setup-e2e");
 
 describe("E2E Category Routes (Real DB)", () => {
   let adminToken;

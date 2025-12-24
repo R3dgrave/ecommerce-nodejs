@@ -9,7 +9,7 @@ const {
   CategoryModel,
   BrandModel,
   PaymentModel
-} = require("./setup.e2e");
+} = require("./setup-e2e");
 
 describe("Payment E2E Flow", () => {
   let token, userId, orderId;

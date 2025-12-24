@@ -1,6 +1,6 @@
 const { BaseRepository } = require('./base-repository');
 const { NotFoundError } = require("../utils/errors")
-const PaymentModel = require('../models/payment');
+const PaymentModel = require('../models/payment-model');
 
 class PaymentRepository extends BaseRepository {
   constructor(Payment = PaymentModel) {

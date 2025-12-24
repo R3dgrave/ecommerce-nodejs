@@ -1,8 +1,8 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const { app, closeDatabase, cleanDatabase } = require("./setup.e2e");
+const { app, closeDatabase, cleanDatabase } = require("./setup-e2e");
 
-const User = require("../../src/models/user");
+const User = require("../../src/models/user-model");
 
 let adminToken;
 let existingCategoryId;

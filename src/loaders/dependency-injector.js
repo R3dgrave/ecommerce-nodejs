@@ -1,13 +1,13 @@
 const config = require("../../config/index");
 
-const UserModel = require("../models/user");
-const CategoryModel = require("../models/category");
-const BrandModel = require("../models/brand");
-const ProductModel = require("../models/product");
-const CartModel = require("../models/cart");
-const OrderModel = require("../models/order");
-const PaymentModel = require("../models/payment");
-const WishlistModel = require("../models/wishlist");
+const UserModel = require("../models/user-model");
+const CategoryModel = require("../models/category-model");
+const BrandModel = require("../models/brand-model");
+const ProductModel = require("../models/product-model");
+const CartModel = require("../models/cart-model");
+const OrderModel = require("../models/order-model");
+const PaymentModel = require("../models/payment-model");
+const WishlistModel = require("../models/wishlist-model");
 
 const UserRepository = require("../repositories/user-repository");
 const CategoryRepository = require("../repositories/category-repository");

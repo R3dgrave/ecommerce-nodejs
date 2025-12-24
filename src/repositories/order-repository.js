@@ -1,5 +1,5 @@
 const { BaseRepository } = require('./base-repository');
-const OrderModel = require('../models/order');
+const OrderModel = require('../models/order-model');
 
 class OrderRepository extends BaseRepository {
   constructor(Order = OrderModel) {

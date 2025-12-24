@@ -1,233 +1,128 @@
 # E-Commerce Backend
 
-Este es el backend del proyecto **E-Commerce**, desarrollado como parte de un proyecto de aprendizaje utilizando (MongoDB, Express, Node.js). Este backend proporciona una API RESTful para manejar funcionalidades como la gestión de productos, usuarios, autenticación y pedidos.
-
----
+Backend robusto para una plataforma de E-Commerce, construido con Node.js, Express y MongoDB. Implementa una arquitectura limpia, inyección de dependencias y un flujo de pagos real con Stripe.
 
 ## 🚀 Indice
 
-1. Descripción del proyecto
-2. Tecnologías utilizadas
-3. Requisitos previos
-4. Instalación y configuración
+1. Árbol de Directorios
+2. Características principales
+3. Tecnologías utilizadas
+4. Arquitectura y Patrones
 5. Endpoints disponibles
-6. Autenticación y autorización
-7. Despliegue
-8. Enlaces útiles
+6. Configuración del Entorno
+7. Ejecución de Tests
+8. Enlaces Útiles
 9. Autor
-
----
 
 ## 🌲 Árbol de Directorios
 
 ```bash
-.
-├── config/              # Archivos de configuración y variables de entorno
-│   └── index.js         # Carga y validación de variables de entorno (Joi)
-├── src/                 # Código fuente de la aplicación
-│   ├── app.js           # Configuración principal de Express (Middlewares)
-│   ├── loaders/         # Inicialización de módulos críticos
-│   │   ├── dependency-injector.js # Contenedor de Inyección de Dependencias (DI)
-│   │   └── database.js            # Conexión inicial a Mongoose/MongoDB
-│   ├── middlewares/     # Middlewares de aplicación
-│   │   ├── error-middleware.js    # Manejo centralizado de errores
-│   │   └── auth-middleware.js     # Verificación de Token y Roles (isAdmin)
-│   ├── models/          # Esquemas de Mongoose (Definición de entidades)
-│   │   ├── Category.js
-│   │   └── Brand.js
-│   ├── api/             # Capa de Interfaz y Enrutamiento
-│   │   ├── routes/      # Endpoints de Express (Controladores)
-│   │   │   ├── category.js      
-│   │   │   └── brand.js
-│   │   │   └── auth.js
-│   │   └── validators/  # Validaciones de entrada (Express-Validator)
-│   │   │   ├── category-validator.js
-│   │   │   └── brand-validator.js
-│   │   │   └── auth-validator.js
-│   ├── repositories/    # Capa de Abstracción de Datos (DAL)
-│   │   ├── category.repository.js # Operaciones CRUD para Category
-│   │   └── brand.repository.js    # Operaciones CRUD para Brand
-│   │   └── user.repository.js
-│   ├── services/        # Capa de Lógica de Negocio (Business Logic)
-│   │   ├── category.service.js  
-│   │   └── brand.service.js
-│   │   └── auth.service.js
-│   └── utils/           # Clases y funciones auxiliares
-│       └── errors.js            # Definición de Custom Errors
-├── tests/               # Pruebas (Unitarias, E2E)
-├── .env                 # Variables de entorno local
-├── server.js            # Punto de entrada de Node.js (Orquesta los Loaders)
-└── package.json
+├── config/                # Configuración global y validación de variables (Joi)
+├── src/
+│   ├── app.js             # Configuración de Express y registro de rutas
+│   ├── server.js          # Punto de entrada y arranque del servidor
+│   ├── loaders/           # Inicialización (Base de datos, Dependency Injector Container)
+│   ├── api/
+│   │   ├── routes/        # Definición de endpoints
+│   │   └── validators/    # Esquemas de validación (Express-Validator)
+│   │   └── controllers/   # Orquestadores de la solicitud HTTP    
+│   ├── services/          # Lógica de negocio pura
+│   ├── repositories/      # Capa de persistencia (Patrón Repository)
+│   ├── models/            # Esquemas de Mongoose
+│   ├── providers/         # Integraciones externas (Stripe, JWT)
+│   ├── middlewares/       # Seguridad, Errores y Auth
+│   └── utils/             # Clases de error personalizadas y helpers
+│   └── docs/              
+│   │   ├── openapi.yaml   # Documentación Swagger/OpenAPI
+├── tests/                 # Suite de pruebas Unitarias y E2E (Jest + Supertest)
+│   │   ├── e2e/
+│   │   └── unit/      
+│   │   └── middleware/      
 ```
 
----
+## 🛠 Características principales
 
-## 🚀 Descripción
-
-Este backend gestiona los productos, categorías, marcas, pedidos y usuarios a través de una API segura. Además, se incluye un sistema de autenticación basado en **JWT** para proteger las rutas de administración.
-
-### Características principales:
-
-- **Autenticación de usuarios** usando JWT.
-- **Gestión de productos**: CRUD para productos.
-- **Gestión de categorías y marcas**: CRUD para categorías y marcas.
-- **Gestión de pedidos**: CRUD de pedidos y cambios de estado (e.g. Despachado, Enviado, Entregado).
-- **Filtrado de productos**: Filtra productos por categorías y marcas.
-- **Protección de rutas**: Acceso restringido a rutas de administrador.
-
----
+- **Gestión de Usuarios & Perfil:** Registro, Login, y gestión de direcciones de envío.
+- **Catálogo Completo:** CRUD de productos, categorías y marcas con filtrado avanzado.
+- **Carrito de Compras:** Persistencia por usuario y validación de stock en tiempo real.
+- **Flujo de Pedidos:** Creación de órdenes con selección de dirección por defecto.
+- **Pagos con Stripe:** Integración con Stripe API (Payment Intents) y manejo de Webhooks.
+- **Wishlist:** Lista de deseos con lógica de no duplicidad.
+- **Seguridad:** Autenticación JWT y autorización basada en roles (User/Admin).
+- **Arquitectura Limpia:** Desacoplamiento total mediante Inyección de Dependencias.
 
 ## 🛠 Tecnologías utilizadas
 
-- **Node.js**: Entorno de ejecución para JavaScript.
-- **Express**: Framework de Node.js para manejar rutas y solicitudes HTTP.
-- **MongoDB**: Base de datos NoSQL para almacenar los datos del sistema (productos, usuarios, pedidos, etc.).
-- **Mongoose**: Librería para interactuar con MongoDB a través de un modelo de datos estructurado.
-- **JWT**: JSON Web Tokens para la autenticación de usuarios y protección de rutas.
+- **Runtime:** Node.js (v18+)
+- **Framework:** Express.js
+- **Base de Datos:** MongoDB & Mongoose
+- **Pagos:** Stripe SDK
+- **Validación:** Express-Validator & Joi
+- **Pruebas:** Jest & Supertest
+- **Documentación:** Swagger / OpenAPI 3.0
 
----
+## 🏗 Arquitectura y Patrones
 
-## 🏗 Arquitectura y Patrones Implementados
+El proyecto destaca por su alta mantenibilidad gracias a:
 
-El sistema está diseñado siguiendo principios de programación modular y de responsabilidad única (SRP), lo que garantiza un código limpio, desacoplado y altamente testeable.
+- **Patrón Repository:** Abstracción total de Mongoose para facilitar el testing.
+- **Inyección de Dependencias (DI):** Las clases reciben sus dependencias por constructor, facilitando el uso de Mocks.
+- **Global Error Handling:** Middleware centralizado para capturar y formatear errores.
+- **Base Repository:** Clase genérica para operaciones CRUD comunes, reduciendo la duplicidad de código.
 
-### Patrones clave:
+## 🧑‍💻 Endpoints disponibles
 
-- **Patrón Repository (Capa de Datos)**:
-  - La carpeta `repositories` (ej: `user-repository.js`) aísla la lógica de acceso a la base de datos (MongoDB/Mongoose).
-  - **Beneficio**: Permite cambiar la base de datos (ej. de MongoDB a PostgreSQL) sin modificar la lógica de negocio.
-- **Patrón Service (Capa de Negocio)**:
-  - La carpeta `services` (ej: `auth-service.js`) contiene toda la lógica de negocio (validación de contraseñas, _hashing_, gestión de flujos de registro).
-  - **Beneficio**: Mantiene los controladores de ruta ligeros y facilita el testing unitario de la lógica central.
-- **Patrón Provider (Capa de Terceros)**:
-  - La carpeta `providers` (ej: `token-provider.js`) encapsula la lógica de librerías externas o servicios específicos (como la generación y verificación de JWT con `jsonwebtoken`).
-  - **Beneficio**: El servicio de autenticación no interactúa directamente con JWT, sino con una abstracción.
-- **Inyección de Dependencias (DI)**:
-  - La aplicación se ensambla en `app.js` y `server.js`, donde las dependencias (Repository, Provider) se inyectan en el constructor de las clases (Service).
-  - **Beneficio**: Esto permite inyectar **mocks** durante las pruebas E2E y unitarias, logrando un control total sobre el comportamiento del sistema sin depender de la red o la base de datos real.
+🔐 Autenticación & Cliente
 
----
+- POST /auth/register | POST /auth/login
+- GET /customer/profile - Ver perfil y direcciones.
+- POST /customer/address - Gestionar direcciones de envío.
 
-## ⚙ Requisitos previos
+🛍️ Tienda (Público/Admin)
 
-Asegúrate de tener lo siguiente antes de ejecutar el proyecto:
+- GET /product - Listar con filtros.
+- GET /category | GET /brand
+- POST /product - (Admin) Crear producto.
 
-- **Node.js v18 o superior**: [Descargar Node.js](https://nodejs.org/)
-- **MongoDB**: Puedes usar una instancia local de MongoDB o un servicio en la nube como [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+🛒 Compra & Deseos
 
----
+- POST /cart/add - Gestionar carrito.
+- GET /wishlist - Ver lista de deseos.
+- POST /wishlist/add - Guardar para después.
 
-## 🛠 Instalación y configuración
+💳 Pedidos & Pagos
 
-Sigue estos pasos para configurar el backend de manera local.
+- POST /order - Generar pedido desde el carrito.
+- PATCH /order/:id/cancel - Cancelar pedido pendiente y devolver stock.
+- POST /payment/create-intent - Iniciar pago con Stripe.
+- POST /payment/webhook - Confirmación automática de pago.
 
-### 1️⃣ Clonar el repositorio
-
-Clona este repositorio en tu máquina local:
-
-```bash
-git clone https://github.com/R3dgrave/E-Commerce-Backend.git
-cd E-Commerce-Backend
-```
-
-### 2️⃣ Instalar dependencias
-
-```bash
-npm install
-```
-
-### 3️⃣ Configurar variables de entorno
+## ⚙️ Configuración del Entorno
 
 Crea un archivo .env en la raíz del proyecto y agrega las siguientes variables de entorno:
 
 ```bash
-MONGODB_URL=mongodb://localhost:27017/ecommerce_db  # O la URL de tu base de datos MongoDB
-JWT_SECRET=tu_clave_secreta
 PORT=5000
+MONGODB_URL=mongodb://...
+JWT_SECRET=tu_secreto_super_seguro
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+FRONTEND_URL=http://localhost:3000
 ```
 
-### 4️⃣ Ejecutar el proyecto localmente
+## 🧪 Ejecución de Tests
 
 ```bash
-npm start
+# Ejecutar todos los tests
+npm test
+
+# Ejecutar tests individual
+npm test product.e2e.test.js
 ```
 
----
+## 🔗 Enlaces Útiles
 
-## 🧑‍💻 Endpoints disponibles
-
-1️⃣ Autenticación
-
-- POST /auth/login: Inicia sesión de usuario.
-- POST /auth/register: Registra un nuevo usuario.
-
-2️⃣ Productos
-
-- GET /product: Obtiene todos los productos.
-- POST /product: Crea un nuevo producto (requiere autenticación de administrador).
-- GET /product/:id: Obtiene un producto por ID.
-- PUT /product/:id: Actualiza un producto por ID (requiere autenticación de administrador).
-- DELETE /products/:id: Elimina un producto por ID (requiere autenticación de administrador).
-
-3️⃣ Categorías
-
-- GET /category: Obtiene todas las categorías.
-- POST /category: Crea una nueva categoría (requiere autenticación de administrador).
-- GET /category/:id: Obtiene una categoría por ID.
-- PUT /category/:id: Actualiza una categoría por ID (requiere autenticación de administrador).
-- DELETE /category/:id: Elimina una categoría por ID (requiere autenticación de administrador).
-
-4️⃣ Marcas
-
-- GET /brand: Obtiene todas las marcas.
-- POST /brand: Crea una nueva marca (requiere autenticación de administrador).
-- GET /brand/:id: Obtiene una marca por ID.
-- PUT /brand/:id: Actualiza una marca por ID (requiere autenticación de administrador).
-- DELETE /brand/:id: Elimina una marca por ID (requiere autenticación de administrador).
-
-5️⃣ Pedidos
-
-- GET /orders: Obtiene todos los pedidos (requiere autenticación de administrador).
-- POST /orders: Crea un nuevo pedido.
-- GET /orders/:id: Obtiene un pedido por ID.
-- PUT /orders/:id: Actualiza el estado de un pedido (requiere autenticación de administrador).
-
----
-
-## 🔐 Autenticación y Autorización Detallada
-
-- La seguridad se implementa a través de dos middlewares clave en la capa de Authorization:
-
-1. **verifyToken**:
-    - Verifica la validez y la firma del JWT.
-    - Si es válido, adjunta el payload decodificado (ej: user.id, user.isAdmin) a req.user.
-    - Si es inválido, retorna 401 Unauthorized.
-
-2. **isAdmin**:
-    -Se ejecuta después de verifyToken.
-    -Revisa req.user.isAdmin. Si es false o si el usuario no existe, retorna 403 Forbidden.
-    -Solo permite el paso a las rutas críticas del negocio (CRUD de productos, categorías, marcas, y gestión de pedidos).
-
-- Para obtener un token, los usuarios deben iniciar sesión a través del endpoint /auth/login. Este token debe ser enviado en el encabezado Authorization como Bearer <token> para acceder a las rutas protegidas.
-
----
-
-
-## 🌍 Despliegue
-
-- Este backend está diseñado para ser desplegado en un entorno en la nube. Se puede usar servicios como Render, Heroku o AWS. Asegúrate de configurar correctamente las variables de entorno, especialmente la URL de la base de datos y el JWT Secreto.
-
----
-
-## 🔗 Enlaces útiles
-
-- Frontend del proyecto: E-Commerce Frontend
-- Documentación de Node.js: https://nodejs.org/en/docs/
-- Documentación de Express: https://expressjs.com/
-- Documentación de MongoDB: https://www.mongodb.com/docs/
-- Documentación de JWT: https://jwt.io/
-
----
+- Documentación Interactiva: http://localhost:5000/api-docs (Swagger)
 
 ## 👤 Autor
 

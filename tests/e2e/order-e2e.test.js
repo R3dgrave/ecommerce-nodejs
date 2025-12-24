@@ -5,7 +5,7 @@ const {
   UserModel,
   CartModel,
   ProductModel,
-} = require("./setup.e2e");
+} = require("./setup-e2e");
 
 describe("Order E2E Flow", () => {
   let token;

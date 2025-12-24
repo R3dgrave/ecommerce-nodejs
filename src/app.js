@@ -4,14 +4,14 @@ const morgan = require("morgan");
 const { swaggerUi, specs } = require("../config/swagger");
 
 const errorHandler = require("./middlewares/error-middleware");
-const authRoutesFactory = require("./api/routes/auth");
-const brandRoutesFactory = require("./api/routes/brand");
-const categoryRoutesFactory = require("./api/routes/category");
-const productRoutesFactory = require("./api/routes/product");
-const cartRoutesFactory = require("./api/routes/cart");
-const orderRoutesFactory = require("./api/routes/order");
-const paymentRoutesFactory = require("./api/routes/payment");
-const customerRoutesFactory = require("./api/routes/customer");
+const authRoutesFactory = require("./api/routes/auth-routes");
+const brandRoutesFactory = require("./api/routes/brand-routes");
+const categoryRoutesFactory = require("./api/routes/category-routes");
+const productRoutesFactory = require("./api/routes/product-routes");
+const cartRoutesFactory = require("./api/routes/cart-routes");
+const orderRoutesFactory = require("./api/routes/order-routes");
+const paymentRoutesFactory = require("./api/routes/payment-routes");
+const customerRoutesFactory = require("./api/routes/customer-routes");
 const wishlistRoutesFactory = require("./api/routes/wishlist-routes");
 
 const app = express();

@@ -1,5 +1,5 @@
 const request = require("supertest");
-const { app, cleanDatabase, ProductModel, CategoryModel, BrandModel } = require("./setup.e2e");
+const { app, cleanDatabase, ProductModel, CategoryModel, BrandModel } = require("./setup-e2e");
 
 describe("Wishlist E2E", () => {
   let userToken;

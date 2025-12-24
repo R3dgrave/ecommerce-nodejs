@@ -23,14 +23,14 @@ const WishlistServiceClass = require("../../src/services/wishlist-service");
 
 const authMiddlewareFactory = require("../../src/middlewares/auth-middleware");
 
-const UserModel = require("../../src/models/user");
-const CategoryModel = require("../../src/models/category");
-const BrandModel = require("../../src/models/brand");
-const ProductModel = require("../../src/models/product");
-const CartModel = require("../../src/models/cart");
-const OrderModel = require("../../src/models/order");
-const PaymentModel = require("../../src/models/payment");
-const WishlistModel = require("../../src/models/wishlist");
+const UserModel = require("../../src/models/user-model");
+const CategoryModel = require("../../src/models/category-model");
+const BrandModel = require("../../src/models/brand-model");
+const ProductModel = require("../../src/models/product-model");
+const CartModel = require("../../src/models/cart-model");
+const OrderModel = require("../../src/models/order-model");
+const PaymentModel = require("../../src/models/payment-model");
+const WishlistModel = require("../../src/models/wishlist-model");
 
 const TokenProviderClass = require("../../src/providers/token-provider");
 const config = require("../../config/index");

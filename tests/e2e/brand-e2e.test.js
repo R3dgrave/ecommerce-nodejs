@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { app, closeDatabase, cleanDatabase, UserModel } = require('./setup.e2e');
+const { app, closeDatabase, cleanDatabase, UserModel } = require('./setup-e2e');
 
 let adminToken;
 let existingCategoryId;

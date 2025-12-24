@@ -1,5 +1,5 @@
 const request = require("supertest");
-const { app, closeDatabase, cleanDatabase, ProductModel, CategoryModel, BrandModel } = require("./setup.e2e");
+const { app, closeDatabase, cleanDatabase, ProductModel, CategoryModel, BrandModel } = require("./setup-e2e");
 
 describe("E2E: Cart Flow", () => {
   let userToken, productId;

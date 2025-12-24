@@ -1,5 +1,5 @@
 const request = require("supertest");
-const { app, cleanDatabase, authService } = require("./setup.e2e");
+const { app, cleanDatabase, authService } = require("./setup-e2e");
 
 describe("Customer E2E", () => {
   let userToken;

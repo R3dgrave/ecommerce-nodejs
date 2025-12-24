@@ -1,6 +1,6 @@
 const express = require("express");
 const orderControllerFactory = require("../controllers/order-controller");
-const { validateCreateOrder, validateGetOrderById } = require("../../api/validators/order-validator");
+const { validateCreateOrder, validateGetOrderById } = require("../validators/order-validator");
 
 module.exports = function (orderService, verifyToken) {
   const router = express.Router();
