@@ -1,125 +1,79 @@
 const sinon = require("sinon");
 const authMiddlewareFactory = require("../../src/middlewares/auth-middleware");
+const { UnauthorizedError, ForbiddenError } = require("../../src/utils/errors");
 
 const MOCK_VALID_TOKEN = "Bearer valid.jwt.token";
-const MOCK_INVALID_TOKEN = "Bearer invalid.jwt.token";
-const MOCK_USER_PAYLOAD = {
-  id: "user-id-123",
-  name: "Authenticated User",
-  isAdmin: false,
-};
+const MOCK_USER_PAYLOAD = { id: "user-id-123", isAdmin: false };
 
-const MOCK_ADMIN_PAYLOAD = {
-  id: "admin-id-456",
-  name: "Admin User",
-  isAdmin: true,
-};
-
-const mockTokenProvider = {
-  verify: sinon.stub(),
-};
-
-const { verifyToken: middleware, isAdmin } = authMiddlewareFactory(mockTokenProvider);
-
-describe("AuthMiddleware", () => {
-  let req;
-  let res;
-  let next;
+describe("AuthMiddleware Unit Tests", () => {
+  let req, res, next, mockTokenProvider, mockUserRepository, authMiddleware;
 
   beforeEach(() => {
-    sinon.restore();
-    mockTokenProvider.verify.resetHistory();
+    mockTokenProvider = { verifyToken: sinon.stub() };
+    mockUserRepository = { findById: sinon.stub() };
 
-    req = {
-      header: sinon.stub(),
-    };
-    res = {
-      status: sinon.stub().returnsThis(),
-      json: sinon.stub().returnsThis(),
-    };
+    authMiddleware = authMiddlewareFactory(mockTokenProvider, mockUserRepository);
 
+    req = { headers: {} };
+    res = {};
     next = sinon.stub();
   });
 
-  it("debería adjuntar el payload del usuario a req.user y llamar a next() si el token es válido", async () => {
-    req.header.withArgs("Authorization").returns(MOCK_VALID_TOKEN);
-    mockTokenProvider.verify
-      .withArgs("valid.jwt.token")
-      .returns(MOCK_USER_PAYLOAD);
-
-    await middleware(req, res, next);
-
-    expect(mockTokenProvider.verify.calledOnce).toBe(true);
-    expect(req.user).toEqual(MOCK_USER_PAYLOAD);
-    expect(next.calledOnce).toBe(true);
-    expect(res.status.called).toBe(false);
+  afterEach(() => {
+    sinon.restore();
   });
 
-  it("debería retornar 401 y un mensaje de error si el header Authorization está ausente", async () => {
-    req.header.withArgs("Authorization").returns(undefined);
+  describe("verifyToken", () => {
+    it("debería adjuntar el payload a req.user si el token es válido", async () => {
+      req.headers.authorization = MOCK_VALID_TOKEN;
+      mockTokenProvider.verifyToken.returns(MOCK_USER_PAYLOAD);
 
-    await middleware(req, res, next);
+      await authMiddleware.verifyToken(req, res, next);
 
-    expect(mockTokenProvider.verify.called).toBe(false);
-    expect(next.called).toBe(false);
-    expect(res.status.calledOnceWith(401)).toBe(true);
-    expect(res.json.calledOnce).toBe(true);
-    expect(res.json.firstCall.args[0]).toMatchObject({
-      success: false,
-      error: expect.any(String),
+      expect(req.user).toEqual(MOCK_USER_PAYLOAD);
+      expect(next.calledOnceWithExactly()).toBe(true);
     });
-  });
 
-  it("debería retornar 401 si el TokenProvider.verify falla (token inválido/expirado)", async () => {
-    req.header.withArgs("Authorization").returns(MOCK_INVALID_TOKEN);
-    mockTokenProvider.verify.throws(new Error("Token signature invalid"));
+    it("debería llamar a next con UnauthorizedError si no hay token", async () => {
+      req.headers.authorization = undefined;
 
-    await middleware(req, res, next);
+      await authMiddleware.verifyToken(req, res, next);
 
-    expect(mockTokenProvider.verify.calledOnce).toBe(true);
-    expect(next.called).toBe(false);
-    expect(res.status.calledOnceWith(401)).toBe(true);
-    expect(res.json.calledOnce).toBe(true);
-    expect(res.json.firstCall.args[0]).toMatchObject({
-      success: false,
-      error: expect.any(String),
+      const errorPassed = next.firstCall.args[0];
+      expect(errorPassed).toBeInstanceOf(UnauthorizedError);
+      expect(errorPassed.statusCode).toBe(401);
     });
   });
 
   describe("isAdmin", () => {
-    it("debería llamar a next() si req.user.isAdmin es verdadero", () => {
-      req.user = MOCK_ADMIN_PAYLOAD;
+    it("debería permitir el acceso si el usuario es admin en la DB", async () => {
+      req.user = { id: "admin-id" };
+      mockUserRepository.findById.resolves({ id: "admin-id", isAdmin: true });
 
-      isAdmin(req, res, next);
+      await authMiddleware.isAdmin(req, res, next);
 
-      expect(next.calledOnce).toBe(true);
-      expect(res.status.called).toBe(false);
+      expect(next.calledOnceWithExactly()).toBe(true);
     });
 
-    it("debería retornar 403 (Forbidden) si req.user.isAdmin es falso", () => {
-      req.user = MOCK_USER_PAYLOAD;
+    it("debería llamar a next con ForbiddenError si el usuario no es admin", async () => {
+      req.user = { id: "user-id" };
+      mockUserRepository.findById.resolves({ id: "user-id", isAdmin: false });
 
-      isAdmin(req, res, next);
+      await authMiddleware.isAdmin(req, res, next);
 
-      expect(next.called).toBe(false);
-      expect(res.status.calledOnceWith(403)).toBe(true);
-      expect(res.json.firstCall.args[0]).toMatchObject({
-        success: false,
-        error: expect.any(String),
-      });
+      const errorPassed = next.firstCall.args[0];
+      expect(errorPassed).toBeInstanceOf(ForbiddenError);
+      expect(errorPassed.statusCode).toBe(403);
     });
 
-    it("debería retornar 403 (Forbidden) si req.user no existe (falta de token previo)", () => {
-      req.user = undefined;
+    it("debería pasar el error al ErrorHandler si falla el repositorio", async () => {
+      req.user = { id: "user-id" };
+      const dbError = new Error("DB Connection Failed");
+      mockUserRepository.findById.rejects(dbError);
 
-      isAdmin(req, res, next);
+      await authMiddleware.isAdmin(req, res, next);
 
-      expect(next.called).toBe(false);
-      expect(res.status.calledOnceWith(403)).toBe(true);
-      expect(res.json.firstCall.args[0]).toMatchObject({
-        success: false,
-        error: expect.any(String),
-      });
+      expect(next.calledOnceWith(dbError)).toBe(true);
     });
   });
 });

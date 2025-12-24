@@ -1,39 +1,39 @@
-module.exports = function (tokenProvider) {
-  const verifyToken = function (req, res, next) {
-    const authHeader = req.header("Authorization");
+const { UnauthorizedError, ForbiddenError } = require("../utils/errors");
+
+const authMiddlewareFactory = (tokenProvider, userRepository) => {
+  
+  const verifyToken = (req, res, next) => {
+    const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        error:
-          "Acceso denegado. Formato de token inválido (se espera 'Bearer <token>').",
-      });
+      return next(new UnauthorizedError("Token no proporcionado o formato inválido."));
     }
 
     const token = authHeader.split(" ")[1];
-
     try {
-      const decode = tokenProvider.verify(token);
-      req.user = decode;
+      const decoded = tokenProvider.verifyToken(token);
+      req.user = decoded;
       next();
-    } catch (err) {
-      return res.status(401).json({
-        success: false,
-        error: "Token inválido o expirado.",
-      });
+    } catch (error) {
+      next(new UnauthorizedError("Token inválido o expirado."));
     }
   };
 
-  const isAdmin = function (req, res, next) {
-    if (req.user && req.user.isAdmin) {
-      next();
-    } else {
-      return res.status(403).json({
-        success: false,
-        error: "Acceso prohibido. Requiere privilegios de Administrador.",
-      });
+  const isAdmin = async (req, res, next) => {
+    try {
+      const user = await userRepository.findById(req.user.id);
+
+      if (user && user.isAdmin === true) {
+        next();
+      } else {
+        throw new ForbiddenError("Acceso denegado: Se requieren permisos de administrador.");
+      }
+    } catch (error) {
+      next(error);
     }
   };
 
   return { verifyToken, isAdmin };
 };
+
+module.exports = authMiddlewareFactory;

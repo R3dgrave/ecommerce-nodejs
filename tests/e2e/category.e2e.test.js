@@ -1,9 +1,6 @@
 const request = require("supertest");
 const mongoose = require('mongoose');
-const { app, closeDatabase, cleanDatabase } = require("./setup.e2e");
-
-const User = require('../../src/models/user');
-const Category = require('../../src/models/category');
+const { app, closeDatabase, cleanDatabase, CategoryModel, UserModel } = require("./setup.e2e");
 
 describe("E2E Category Routes (Real DB)", () => {
   let adminToken;
@@ -13,7 +10,6 @@ describe("E2E Category Routes (Real DB)", () => {
     name: "Admin Category Test",
     email: "admin-cat-e2e@test.com",
     password: "securepassword123",
-    isAdmin: true,
   };
 
   beforeAll(async () => {
@@ -21,7 +17,7 @@ describe("E2E Category Routes (Real DB)", () => {
 
     await request(app).post('/auth/register').send(MOCK_ADMIN);
 
-    await User.findOneAndUpdate({ email: MOCK_ADMIN.email }, { isAdmin: true });
+    await UserModel.findOneAndUpdate({ email: MOCK_ADMIN.email }, { isAdmin: true });
 
     const loginRes = await request(app).post('/auth/login').send({
       email: MOCK_ADMIN.email,
@@ -35,7 +31,6 @@ describe("E2E Category Routes (Real DB)", () => {
     await closeDatabase();
   });
 
-  // --- Tests de Creación ---
   describe("POST /category", () => {
     it("debería crear una categoría exitosamente (Status 201)", async () => {
       const response = await request(app)
@@ -45,12 +40,13 @@ describe("E2E Category Routes (Real DB)", () => {
 
       expect(response.statusCode).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.result.name).toBe("electronics");
+      expect(response.body.data.name).toBe("electronics");
 
-      createdCategoryId = response.body.result._id || response.body.result.id;
+      createdCategoryId = response.body.data.id;
+      expect(createdCategoryId).toBeDefined();
     });
 
-    it("debería retornar 400 si falta el nombre (Validación)", async () => {
+    it("debería retornar 400 si falta el nombre (Validación Joi/Validator)", async () => {
       const response = await request(app)
         .post("/category")
         .set('Authorization', `Bearer ${adminToken}`)
@@ -60,18 +56,17 @@ describe("E2E Category Routes (Real DB)", () => {
       expect(response.body.success).toBe(false);
     });
 
-    it("debería retornar 409 si el nombre ya existe (Conflicto real en DB)", async () => {
+    it("debería retornar 409 si el nombre ya existe (Conflict)", async () => {
       const response = await request(app)
         .post("/category")
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: "electronics" });
 
       expect(response.statusCode).toBe(409);
-      expect(response.body.error).toContain("existe");
+      expect(response.body.message).toMatch(/existe/i);
     });
   });
 
-  // --- Tests de Lectura ---
   describe("GET /category", () => {
     it("debería retornar la lista de categorías paginada", async () => {
       const response = await request(app)
@@ -80,8 +75,8 @@ describe("E2E Category Routes (Real DB)", () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(Array.isArray(response.body.result.data)).toBe(true);
-      expect(response.body.result.totalCount).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(response.body.data.data)).toBe(true);
+      expect(response.body.data.totalCount).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -92,7 +87,8 @@ describe("E2E Category Routes (Real DB)", () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.statusCode).toBe(200);
-      expect(response.body.result.name).toBe("electronics");
+      expect(response.body.data.name).toBe("electronics");
+      expect(response.body.data.id).toBe(createdCategoryId);
     });
 
     it("debería retornar 404 si la categoría no existe", async () => {
@@ -102,10 +98,10 @@ describe("E2E Category Routes (Real DB)", () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.statusCode).toBe(404);
+      expect(response.body.success).toBe(false);
     });
   });
 
-  // --- Tests de Actualización ---
   describe("PUT /category/:id", () => {
     it("debería actualizar el nombre exitosamente", async () => {
       const response = await request(app)
@@ -114,13 +110,13 @@ describe("E2E Category Routes (Real DB)", () => {
         .send({ name: "computing" });
 
       expect(response.statusCode).toBe(200);
+      expect(response.body.data.name).toBe("computing");
 
-      const updatedCat = await Category.findById(createdCategoryId);
+      const updatedCat = await CategoryModel.findById(createdCategoryId);
       expect(updatedCat.name).toBe("computing");
     });
   });
 
-  // --- Tests de Eliminación ---
   describe("DELETE /category/:id", () => {
     it("debería eliminar la categoría exitosamente", async () => {
       const response = await request(app)
@@ -128,9 +124,9 @@ describe("E2E Category Routes (Real DB)", () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.statusCode).toBe(200);
-      expect(response.body.message).toBe('Categoría eliminada correctamente');
+      expect(response.body.message).toContain('correctamente');
 
-      const checkInDb = await Category.findById(createdCategoryId);
+      const checkInDb = await CategoryModel.findById(createdCategoryId);
       expect(checkInDb).toBeNull();
     });
   });

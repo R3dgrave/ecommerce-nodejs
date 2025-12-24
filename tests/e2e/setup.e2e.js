@@ -19,6 +19,10 @@ const ProductServiceClass = require("../../src/services/product-service");
 const CartServiceClass = require("../../src/services/cart-service");
 const OrderServiceClass = require("../../src/services/order-service");
 const PaymentServiceClass = require("../../src/services/payment-service");
+const CustomerServiceClass = require("../../src/services/customer-service");
+
+// Middlewares
+const authMiddlewareFactory = require("../../src/middlewares/auth-middleware");
 
 // Modelos
 const UserModel = require("../../src/models/user");
@@ -45,8 +49,12 @@ const tokenProvider = new TokenProviderClass(
   config.jwtSecret || "default-secret-test"
 );
 
+// --- Instanciación de Middleware de Auth (Verificación por BD)
+const authMiddleware = authMiddlewareFactory(tokenProvider, userRepository);
+
 // --- Instanciación de Servicios ---
 const authService = new AuthServiceClass(userRepository, tokenProvider);
+const customerService = new CustomerServiceClass(userRepository);
 
 const categoryService = new CategoryServiceClass(
   categoryRepository,
@@ -77,7 +85,6 @@ const orderService = new OrderServiceClass(
   productRepository
 );
 
-// --- AGREGADO: Instanciación de PaymentService ---
 const paymentService = new PaymentServiceClass(
   paymentRepository,
   orderRepository,
@@ -87,6 +94,7 @@ const paymentService = new PaymentServiceClass(
 // --- Inicialización de Express ---
 const app = createApp({
   authService,
+  customerService,
   categoryService,
   brandService,
   productService,
@@ -94,6 +102,7 @@ const app = createApp({
   orderService,
   paymentService,
   tokenProvider,
+  authMiddleware,
 });
 
 beforeAll(async () => {
@@ -103,7 +112,16 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await closeDatabase();
+  try {
+    await cleanDatabase();
+    await closeDatabase();
+
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+  } catch (error) {
+    console.error("Error cerrando el setup de tests:", error);
+  }
 });
 
 const cleanDatabase = async () => {
@@ -114,18 +132,17 @@ const cleanDatabase = async () => {
   }
 };
 
-// Exportaciones para uso en los archivos .test.js
 module.exports = {
   app,
   closeDatabase,
   cleanDatabase,
-  
+
   userRepository,
   productRepository,
   cartRepository,
   orderRepository,
   paymentRepository,
-  
+
   UserModel,
   CategoryModel,
   BrandModel,
@@ -133,4 +150,7 @@ module.exports = {
   CartModel,
   OrderModel,
   PaymentModel,
+
+  authService,
+  customerService,
 };

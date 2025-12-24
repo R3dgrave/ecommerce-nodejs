@@ -2,11 +2,6 @@ const express = require("express");
 const orderControllerFactory = require("../controllers/order-controller");
 const { validateCreateOrder, validateGetOrderById } = require("../../api/validators/order-validator");
 
-/**
- * Factory para el router de Órdenes
- * @param {OrderService} orderService 
- * @param {Function} verifyToken 
- */
 module.exports = function (orderService, verifyToken) {
   const router = express.Router();
 

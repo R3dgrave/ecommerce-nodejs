@@ -6,11 +6,6 @@ class CartRepository extends BaseRepository {
     super(Cart);
   }
 
-  /**
-   * @private
-   * Aplica población al carrito.
-   * Nota: Usamos población anidada para los productos dentro de los items.
-   */
   _applyPopulate(query, populateOptions = {}) {
     if (populateOptions.populateProducts) {
       query = query.populate({
@@ -30,13 +25,11 @@ class CartRepository extends BaseRepository {
     return query;
   }
 
-  /**
-   * Obtiene el carrito de un usuario específico.
-   */
   async findByUserId(userId, populateOptions = {}) {
     let query = this.Model.findOne({ userId });
     query = this._applyPopulate(query, populateOptions);
-    return await query.exec();
+    const cart = await query.exec();
+    return this._toPlainObject(cart)
   }
 
   async updateByUserId(userId, data) {
@@ -48,7 +41,6 @@ class CartRepository extends BaseRepository {
       Object.assign(cart, data);
     }
     await cart.save();
-
     return this.findByUserId(userId, { populateProducts: true });
   }
 
@@ -56,9 +48,6 @@ class CartRepository extends BaseRepository {
     return await this.Model.create(data);
   }
 
-  /**
-   * Sobreescribimos findById de base-repository con populate
-   */
   async findById(id, populateOptions = {}) {
     let query = this.Model.findById(id);
     query = this._applyPopulate(query, populateOptions);
@@ -67,7 +56,6 @@ class CartRepository extends BaseRepository {
     return this._toPlainObject(document);
   }
 
-  // Paginacion de carritos de compra de usuarios(para la pag de admin)
   async findWithPagination(filter = {}, options = {}, populateOptions = {}) {
     const page = parseInt(options.page, 10) || 1;
     const limit = parseInt(options.limit, 10) || 10;

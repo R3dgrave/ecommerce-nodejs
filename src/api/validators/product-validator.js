@@ -2,12 +2,10 @@ const { body, query } = require("express-validator");
 const {
   handleValidationErrors,
   validateId,
-  createIdValidationRule,
   requireNonEmptyBody,
   createOptionalNameValidationRule,
 } = require("../../middlewares/validation-utils");
 
-// Regla de validación reutilizable para IDs de MongoDB en el body
 const validateMongoIdBody = (fieldName, message) =>
   body(fieldName)
     .exists()
@@ -15,14 +13,12 @@ const validateMongoIdBody = (fieldName, message) =>
     .isMongoId()
     .withMessage(`${fieldName} debe ser un ID de MongoDB válido.`);
 
-// Regla de validación reutilizable para IDs opcionales en el body (para actualizar)
 const validateOptionalMongoIdBody = (fieldName) =>
   body(fieldName)
     .optional()
     .isMongoId()
     .withMessage(`${fieldName} debe ser un ID de MongoDB válido.`);
 
-// --- Validación para Creación de Producto (POST /product) ---
 const validateCreateProduct = [
   body("name")
     .exists()
@@ -63,7 +59,6 @@ const validateCreateProduct = [
   handleValidationErrors,
 ];
 
-// --- Validación para Actualización de Producto (PUT /product/:id) ---
 const validateUpdateProduct = [
   validateId,
   requireNonEmptyBody,
@@ -96,7 +91,6 @@ const validateUpdateProduct = [
   handleValidationErrors,
 ];
 
-// --- Validación para Paginación de Productos (GET /product) ---
 const validatePagination = [
   query("page")
     .optional()

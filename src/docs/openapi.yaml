@@ -1,0 +1,1071 @@
+openapi: 3.0.0
+info:
+  title: E-commerce API
+  description: API para gestión de tienda online, usuarios, carrito y pagos con Stripe.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000/api
+    description: Servidor de desarrollo
+
+tags:
+  - name: Auth
+    description: Registro y autenticación
+  - name: Brands
+    description: Gestión de marcas
+  - name: Categories
+    description: Gestión de categorías
+  - name: Products
+    description: Catálogo de productos
+  - name: Cart
+    description: Carrito de compras
+  - name: Orders
+    description: Pedidos y Checkout
+  - name: Payments
+    description: Pasarela de pagos
+
+paths:
+  # --- AUTH ---
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        201:
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        409:
+          $ref: '#/components/responses/ConflictError'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/user/{id}:
+    get:
+      summary: Obtiene información de un usuario por ID
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID único del usuario (MongoDB ObjectId)
+      responses:
+        200:
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      summary: Actualiza información del perfil
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        200:
+          description: Usuario actualizado con éxito
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        403:
+          $ref: '#/components/responses/ForbiddenError'
+
+    delete:
+      summary: Elimina la cuenta de usuario
+      tags:
+        - Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Usuario eliminado con éxito
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        403:
+          $ref: '#/components/responses/ForbiddenError'             
+
+  # --- BRANDS ---
+  /brand:
+    get:
+      tags: [Brands]
+      summary: Obtiene todas las marcas con filtros y paginación
+      parameters:
+        - name: name
+          in: query
+          schema: { type: string }
+          description: Búsqueda parcial por nombre
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        200:
+          description: Lista de marcas recuperada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandListResponse'
+    post:
+      tags: [Brands]
+      summary: Crea una nueva marca (Admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandRequest"
+      responses:
+        201:
+          description: Marca creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        404:
+          description: La categoría especificada no existe
+          $ref: '#/components/responses/NotFoundError'
+        409:
+          $ref: '#/components/responses/ConflictError'
+
+  /brand/{id}:
+    get:
+      tags: [Brands]
+      summary: Obtiene una marca por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Detalle de la marca
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags: [Brands]
+      summary: Actualiza una marca existente
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandRequest"
+      responses:
+        200:
+          description: Marca actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandResponse"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags: [Brands]
+      summary: Elimina una marca
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Marca eliminada con éxito
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralResponse"
+        409:
+          description: Conflicto - La marca tiene productos asociados
+          $ref: '#/components/responses/ConflictError'
+
+  /brand/categories/{categoryId}:
+    get:
+      tags: [Brands]
+      summary: Obtiene marcas filtradas por categoría
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Marcas asociadas a la categoría
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandListResponse'
+
+  # --- CATEGORIES ---
+  /category:
+    get:
+      tags: [Categories]
+      summary: Listar todas las categorías (Admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        200:
+          description: Lista de categorías obtenida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          $ref: '#/components/responses/ForbiddenError'
+
+    post:
+      tags: [Categories]
+      summary: Crear una nueva categoría (Admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        201:
+          description: Categoría creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+
+  /category/{id}:
+    get:
+      tags: [Categories]
+      summary: Obtener categoría por ID (Admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Categoría encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags: [Categories]
+      summary: Actualizar categoría (Admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        200:
+          description: Categoría actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags: [Categories]
+      summary: Eliminar categoría (Admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Categoría eliminada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralResponse'
+
+  # --- PRODUCTS ---
+  /product:
+    get:
+      tags: [Products]
+      summary: Obtener todos los productos con filtros y paginación
+      description: Recupera la lista de productos. Realiza populate automático de Brand y Category.
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+        - name: name
+          in: query
+          schema: { type: string }
+          description: Filtrar por nombre de producto
+        - name: categoryId
+          in: query
+          schema: { type: string }
+          description: Filtrar por ID de categoría
+        - name: brandId
+          in: query
+          schema: { type: string }
+          description: Filtrar por ID de marca
+      responses:
+        200:
+          description: Productos obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+
+    post:
+      tags: [Products]
+      summary: Crear un nuevo producto (Admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        201:
+          description: Producto creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          $ref: '#/components/responses/ForbiddenError'
+
+  /product/{id}:
+    get:
+      tags: [Products]
+      summary: Obtener detalles de un producto por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Producto obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags: [Products]
+      summary: Actualizar un producto (Admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        200:
+          description: Producto actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags: [Products]
+      summary: Eliminar un producto (Admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Producto eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+  # --- CART ---
+  /cart:
+    get:
+      tags: [Cart]
+      summary: Obtener el carrito del usuario autenticado
+      description: Recupera el carrito asociado al usuario extraído del JWT.
+      security: [{ bearerAuth: [] }]
+      responses:
+        200:
+          description: Carrito obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /cart/add:
+    post:
+      tags: [Cart]
+      summary: Añadir producto al carrito
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToCartRequest'
+      responses:
+        200:
+          description: Producto añadido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+
+  /cart/remove/{productId}:
+    delete:
+      tags: [Cart]
+      summary: Eliminar un producto específico del carrito
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Producto eliminado del carrito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+  /cart/clear:
+    delete:
+      tags: [Cart]
+      summary: Vaciar completamente el carrito
+      security: [{ bearerAuth: [] }]
+      responses:
+        200:
+          description: Carrito vaciado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralResponse'
+
+  # --- ORDERS ---
+  /order:
+    post:
+      tags: [Orders]
+      summary: Crear una nueva orden
+      description: Crea un pedido a partir de los productos actuales en el carrito del usuario.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shippingAddress]
+              properties:
+                shippingAddress: { $ref: '#/components/schemas/ShippingAddress' }
+      responses:
+        201:
+          description: Orden creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+
+    get:
+      tags: [Orders]
+      summary: Obtener mis órdenes
+      description: Recupera el historial de pedidos del usuario autenticado con paginación.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        200:
+          description: Listado de órdenes recuperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+
+  /order/{id}:
+    get:
+      tags: [Orders]
+      summary: Obtener detalles de una orden por ID
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Detalles de la orden obtenidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+  # --- PAYMENTS ---
+  /payment/config:
+    get:
+      tags: [Payments]
+      summary: Obtener configuración de Stripe
+      description: Recupera la clave pública (publishable key) necesaria para el frontend.
+      security: [{ bearerAuth: [] }]
+      responses:
+        200:
+          description: Configuración recuperada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentConfigResponse'
+
+  /payment/create-intent:
+    post:
+      tags: [Payments]
+      summary: Crear intención de pago
+      description: Genera un PaymentIntent en Stripe para procesar el pago de una orden específica.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentIntentRequest'
+      responses:
+        200:
+          description: Intent creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntentResponse'
+        400:
+          $ref: '#/components/responses/BadRequestError'
+
+  /payment/refund:
+    post:
+      tags: [Payments]
+      summary: Procesar un reembolso (Admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId]
+              properties:
+                orderId: { type: string }
+                reason: { type: string, example: "requested_by_customer" }
+      responses:
+        200:
+          description: Reembolso procesado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralResponse'
+        403:
+          $ref: '#/components/responses/ForbiddenError'
+
+  /payment/webhook:
+    post:
+      tags: [Payments]
+      summary: Webhook de Stripe
+      description: Endpoint para recibir eventos asíncronos de Stripe (payment_intent.succeeded, etc.). Requiere la firma de Stripe en los headers.
+      parameters:
+        - name: stripe-signature
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Webhook recibido y procesado
+        400:
+          description: Error de firma o procesamiento del webhook
+
+components:
+  #--- SECURITY SCHEMES ---
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  #--- RESPONSE SCHEMES ---
+  responses:
+    BadRequestError:
+      description: Error de validación o lógica de negocio (400)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    UnauthorizedError:
+      description: No autorizado - Credenciales inválidas o falta de token (401)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ForbiddenError:
+      description: Prohibido - No tienes permisos suficientes (403)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFoundError:
+      description: El recurso solicitado no existe (404)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ConflictError:
+      description: Conflicto - El recurso ya existe (ej. email duplicado) (409)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    # --- BASE SCHEMAS ---
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string, example: "Descripción del error." }
+        code: { type: integer, example: 400 }
+        details: { type: string, nullable: true }
+
+    GeneralResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string, example: "Operación exitosa" }
+        data: { type: object, nullable: true, example: null }
+
+    PaginatedMeta:
+      type: object
+      properties:
+        totalCount: { type: integer, example: 50 }
+        totalPages: { type: integer, example: 5 }
+        currentPage: { type: integer, example: 1 }          
+
+    # --- AUTH SCHEMAS ---
+    User:
+      type: object
+      properties:
+        id: { type: string, example: "64f1a2b3c4d5e6f7" }
+        name: { type: string, example: "Juan Perez" }
+        email: { type: string, example: "juan@example.com" }
+        isAdmin: { type: boolean, example: false }
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string, format: password }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string, format: password }
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string, format: password }
+
+    RegisterResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/User' }
+
+    LoginResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            token: { type: string }
+            user: { $ref: '#/components/schemas/User' }
+
+    UserResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/User' }       
+
+    # --- BRAND SCHEMAS ---
+    Brand:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        categoryId: { type: string }
+
+    BrandRequest:
+      type: object
+      required: [name, categoryId]
+      properties:
+        name: { type: string, example: "Nike" }
+        categoryId: { type: string, example: "64f1a2b3c4d5e6f7" }
+
+    BrandResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/Brand' }
+
+    BrandListResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items: { type: array, items: { $ref: '#/components/schemas/Brand' } }
+            pagination: { $ref: '#/components/schemas/PaginatedMeta' }
+
+    # --- CATEGORY SCHEMAS ---
+    Category:
+      type: object
+      properties:
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c111" }
+        name: { type: string, example: "Electrónica" }
+        description: { type: string, example: "Dispositivos y gadgets" }
+
+    CategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, example: "Hogar" }
+        description: { type: string }
+
+    CategoryResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/Category' }
+
+    CategoryListResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Category' }
+            pagination: { $ref: '#/components/schemas/PaginatedMeta' }
+
+    # --- PRODUCT SCHEMAS ---
+    Product:
+      type: object
+      properties:
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c222" }
+        name: { type: string, example: "Zapatillas Running Pro" }
+        price: { type: number, example: 99.99 }
+        stock: { type: integer, example: 50 }
+        shortDescription: { type: string }
+        description: { type: string }
+        images: { type: array, items: { type: string } }
+        category: 
+          oneOf:
+            - { type: string }
+            - { $ref: '#/components/schemas/Category' }
+        brand: 
+          oneOf:
+            - { type: string }
+            - { $ref: '#/components/schemas/Brand' }
+
+    ProductRequest:
+      type: object
+      required: [name, price, stock, categoryId, brandId]
+      properties:
+        name: { type: string, example: "Zapatillas Running Pro" }
+        price: { type: number, example: 99.99 }
+        stock: { type: integer, example: 50 }
+        categoryId: { type: string, example: "64f1a2b3c4d5e6f7" }
+        brandId: { type: string, example: "64f1a2b3c4d5e6f8" }
+        shortDescription: { type: string }
+        description: { type: string }
+        images: { type: array, items: { type: string } }
+
+    ProductResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/Product' }
+
+    ProductListResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data:
+          type: object
+          properties:
+            items: 
+              type: array 
+              items: { $ref: '#/components/schemas/Product' }
+            pagination: { $ref: '#/components/schemas/PaginatedMeta' }
+    
+    # --- CART SCHEMAS ---
+    CartItem:
+      type: object
+      properties:
+        productId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c222" }
+        name: { type: string, example: "Zapatillas Running Pro" }
+        price: { type: number, example: 99.99 }
+        quantity: { type: integer, example: 2 }
+        subtotal: { type: number, example: 199.98 }
+
+    Cart:
+      type: object
+      properties:
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c555" }
+        userId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c123" }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CartItem' }
+        totalAmount: { type: number, example: 199.98 }
+        updatedAt: { type: string, format: date-time }
+
+    AddToCartRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c222" }
+        quantity: { type: integer, minimum: 1, example: 1 }
+
+    CartResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string, example: "Operación exitosa" }
+        data: { $ref: '#/components/schemas/Cart' }
+
+    # --- ORDER SCHEMAS ---
+    OrderItem:
+      type: object
+      properties:
+        productId: { type: string }
+        name: { type: string }
+        price: { type: number }
+        quantity: { type: integer }
+
+    ShippingAddress:
+      type: object
+      required: [address, city, country, zipCode]
+      properties:
+        address: { type: string, example: "Av. Siempre Viva 742" }
+        city: { type: string, example: "Springfield" }
+        country: { type: string, example: "USA" }
+        zipCode: { type: string, example: "62704" }
+
+    Order:
+      type: object
+      properties:
+        id: { type: string, example: "64f1a2b3c4d5e6f7a8b9c999" }
+        userId: { type: string }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/OrderItem' }
+        totalAmount: { type: number, example: 250.50 }
+        status: 
+          type: string
+          enum: [pending, paid, shipped, delivered, cancelled]
+          example: "pending"
+        shippingAddress: { $ref: '#/components/schemas/ShippingAddress' }
+        createdAt: { type: string, format: date-time }
+
+    OrderResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/Order' }
+
+    OrderListResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/Order' }
+            pagination: { $ref: '#/components/schemas/PaginatedMeta' }
+
+   # --- PAYMENT SCHEMAS ---
+    PaymentIntentRequest:
+      type: object
+      required: [orderId]
+      properties:
+        orderId: { type: string, example: "64f1a2b3c4d5e6f7a8b9c999" }
+
+    PaymentIntentResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            clientSecret: { type: string, example: "pi_3N4abc..." }
+            paymentIntentId: { type: string, example: "pi_3N4abc" }
+            amount: { type: number, example: 25000 } # En centavos usualmente
+
+    PaymentConfigResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            publishableKey: { type: string, example: "pk_test_51Mz..." }

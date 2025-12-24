@@ -20,7 +20,7 @@ async function databaseLoader() {
       error
     );
     if (process.env.NODE_ENV !== 'test') {
-        process.exit(1);
+      process.exit(1);
     }
     throw error;
   }
@@ -31,10 +31,10 @@ async function databaseLoader() {
  * @returns {Promise<void>}
  */
 async function closeDatabase() {
-    if (mongoose.connection.readyState !== 0 && mongoose.connection.readyState !== 3) {
-        await mongoose.disconnect();
-        console.log("🟡 MongoDB: Conexión cerrada.");
-    }
+  if (mongoose.connection.readyState !== 0 && mongoose.connection.readyState !== 3) {
+    await mongoose.disconnect();
+    console.log("🟡 MongoDB: Conexión cerrada.");
+  }
 }
 
 module.exports = { databaseLoader, closeDatabase };

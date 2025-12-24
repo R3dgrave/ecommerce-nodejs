@@ -18,6 +18,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    shippingAddresses: [
+      {
+        street: String,
+        city: String,
+        state: String,
+        zipCode: String,
+        isDefault: { type: Boolean, default: false }
+      }
+    ],
     isAdmin: {
       type: Boolean,
       default: false,

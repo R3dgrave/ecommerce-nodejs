@@ -1,14 +1,15 @@
+const sendResponse = require('../../utils/response.handler');
+
 const PaymentController = (paymentService) => {
-  const createIntent = async (req, res) => {
+  const createIntent = async (req, res, next) => {
     try {
       const result = await paymentService.createIntent(
         req.body.orderId,
         req.user.id
       );
-      res.status(200).json({ success: true, data: result });
+      return sendResponse(res, 200, result);
     } catch (error) {
-      const status = error.statusCode || 400;
-      res.status(status).json({ success: false, error: error.message });
+      next(error);
     }
   };
 
@@ -16,31 +17,27 @@ const PaymentController = (paymentService) => {
     const sig = req.headers["stripe-signature"];
     try {
       await paymentService.handleWebhook(sig, req.rawBody);
-      res.status(200).json({ success: true });
+      return sendResponse(res, 200, null, "Webhook recibido");
     } catch (error) {
       const status = error.statusCode || 400;
       res.status(status).send(`Webhook Error: ${error.message}`);
     }
   };
 
-  const refund = async (req, res) => {
+  const refund = async (req, res, next) => {
     try {
       const result = await paymentService.processRefund(
         req.body.orderId,
         req.body.reason
       );
-      res
-        .status(200)
-        .json({ success: true, message: "Refund processed", data: result });
+      return sendResponse(res, 200, result, "Reembolso procesado");
     } catch (error) {
-      const status = error.statusCode || 400;
-      res.status(status).json({ success: false, error: error.message });
+      next(error);
     }
   };
 
   const getConfig = async (req, res) => {
-    res.status(200).json({
-      success: true,
+    return sendResponse(res, 200, {
       publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     });
   };

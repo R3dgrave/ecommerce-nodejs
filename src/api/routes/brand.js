@@ -4,21 +4,13 @@ const {
   validateCreateBrand,
   validateId,
   validateUpdateBrand,
-  validateCategoryIdParam
+  validateCategoryIdParam,
 } = require("../validators/brand-validator");
 
-/**
- * Función factory para crear el router de Marcas.
- * @param {BrandService} brandService - Instancia del servicio de Marcas.
- * @param {Function} verifyToken - Middleware de autenticación.
- * @param {Function} isAdmin - Middleware de autorización.
- * @returns {express.Router} El router configurado.
- */
 module.exports = function (brandService, verifyToken, isAdmin) {
   const router = express.Router();
   const brandController = BrandControllerFactory(brandService);
 
-  // POST /brand
   router.post(
     "/",
     validateCreateBrand,
@@ -27,7 +19,6 @@ module.exports = function (brandService, verifyToken, isAdmin) {
     brandController.createBrand
   );
 
-  // GET /brand/categories/:categoryId
   router.get(
     "/categories/:categoryId",
     validateCategoryIdParam,
@@ -36,7 +27,6 @@ module.exports = function (brandService, verifyToken, isAdmin) {
     brandController.getBrandsByCategory
   );
 
-  // GET /brand/:id
   router.get(
     "/:id",
     validateId,
@@ -45,16 +35,8 @@ module.exports = function (brandService, verifyToken, isAdmin) {
     brandController.getBrandById
   );
 
-  // GET /brand (GetAll)
-  router.get(
-    "/",
-    verifyToken,
-    isAdmin,
-    brandController.getAllBrands
-  );
+  router.get("/", verifyToken, isAdmin, brandController.getAllBrands);
 
-
-  // PUT /brand/:id
   router.put(
     "/:id",
     validateUpdateBrand,
@@ -63,7 +45,6 @@ module.exports = function (brandService, verifyToken, isAdmin) {
     brandController.updateBrand
   );
 
-  // DELETE /brand/:id
   router.delete(
     "/:id",
     validateId,

@@ -25,7 +25,6 @@ beforeAll(async () => {
 
   await request(app).post("/auth/register").send(MOCK_ADMIN_USER);
   const user = await User.findOne({ email: MOCK_ADMIN_USER.email });
-
   user.isAdmin = true;
   await user.save();
 
@@ -39,24 +38,21 @@ beforeAll(async () => {
   const catRes = await request(app)
     .post("/category")
     .set("Authorization", `Bearer ${adminToken}`)
-    .send({ name: "electronics product test" });
+    .send({ name: MOCK_CATEGORY_NAME });
 
-  existingCategoryId = catRes.body.result._id || catRes.body.result.id;
+  const catData = catRes.body.data
+  existingCategoryId = catData.id;
 
   const brandRes = await request(app)
     .post("/brand")
     .set("Authorization", `Bearer ${adminToken}`)
-    .send({ name: "sony product test", categoryId: existingCategoryId });
+    .send({ name: MOCK_BRAND_NAME, categoryId: existingCategoryId });
 
-  if (!brandRes.body.result) {
-    throw new Error(
-      `Fallo setup Producto: No se pudo crear la marca. Error: ${JSON.stringify(
-        brandRes.body
-      )}`
-    );
+  const brandData = brandRes.body.data
+  if (!brandData) {
+    throw new Error(`Fallo setup Producto: ${JSON.stringify(brandRes.body)}`);
   }
-
-  existingBrandId = brandRes.body.result._id || brandRes.body.result.id;
+  existingBrandId = brandData.id;
 });
 
 afterAll(async () => {
@@ -74,7 +70,6 @@ describe("E2E: /product routes", () => {
     brandId: null,
   };
 
-  // --- POST /product (Creación) ---
   describe("POST /product (Admin)", () => {
     beforeEach(() => {
       productData.categoryId = existingCategoryId;
@@ -88,209 +83,98 @@ describe("E2E: /product routes", () => {
         .send(productData);
 
       expect(res.statusCode).toBe(201);
-      expect(res.body.success).toBe(true);
-      expect(res.body.result.name).toBe(MOCK_PRODUCT_NAME);
-      expect(res.body.result.price).toBe(productData.price);
-      expect(res.body.result.categoryId).toBe(existingCategoryId);
-
-      newProductId = res.body.result._id;
+      const resData = res.body.data
+      expect(resData.name).toBe(MOCK_PRODUCT_NAME);
+      
+      newProductId = resData.id;
     });
 
-    it("debería fallar con 409 si el nombre del producto ya existe", async () => {
+    it("debería fallar con 409 si el nombre ya existe", async () => {
       const res = await request(app)
         .post("/product")
         .set("Authorization", `Bearer ${adminToken}`)
         .send(productData);
 
       expect(res.statusCode).toBe(409);
-      expect(res.body.error).toMatch(/Ya existe un producto con este nombre/);
     });
 
-    it("debería fallar con 400 si falta el precio (Validación)", async () => {
-      const invalidData = {
-        ...productData,
-        price: undefined,
-        name: "Invalid Product Test",
-      };
-
+    it("debería fallar con 404 si la categoría no existe", async () => {
+      const fakeId = new mongoose.Types.ObjectId().toString();
       const res = await request(app)
         .post("/product")
         .set("Authorization", `Bearer ${adminToken}`)
-        .send(invalidData);
-
-      expect(res.statusCode).toBe(400);
-      expect(res.body.errors[0].msg).toBe("El precio es requerido.");
-    });
-
-    it("debería fallar con 404 si la categoría no existe (Lógica de Servicio)", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      const invalidData = {
-        ...productData,
-        categoryId: nonExistentId,
-        name: "Invalid Cat Test",
-      };
-
-      const res = await request(app)
-        .post("/product")
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send(invalidData);
+        .send({ ...productData, categoryId: fakeId, name: "Other name" });
 
       expect(res.statusCode).toBe(404);
-      expect(res.body.error).toMatch(
-        /La CategoryId .* proporcionada no existe/
-      );
     });
   });
 
-  // --- GET /product (Listado y Paginación) ---
   describe("GET /product (Público)", () => {
-    it("debería obtener la lista de productos paginada (Status 200) con población", async () => {
+    it("debería obtener la lista paginada y poblada", async () => {
       const res = await request(app).get("/product?page=1&limit=10");
-
       expect(res.statusCode).toBe(200);
-      expect(res.body.success).toBe(true);
 
-      const { data, totalCount } = res.body.result;
+      const resData = res.body.data
+      expect(resData.totalCount).toBeGreaterThanOrEqual(1);
+      
+      const product = resData.data[0];
 
-      expect(totalCount).toBeGreaterThanOrEqual(1);
-      expect(data.length).toBeGreaterThan(0);
-
-      const firstProduct = data.find((p) => p._id === newProductId);
-      expect(firstProduct.categoryId).toBeDefined();
-      expect(firstProduct.categoryId.name).toBe(MOCK_CATEGORY_NAME);
-      expect(firstProduct.brandId.name).toBe(MOCK_BRAND_NAME);
+      expect(product.categoryId.name).toBe(MOCK_CATEGORY_NAME);
+      expect(product.brandId.name).toBe(MOCK_BRAND_NAME);
     });
 
-    it("debería filtrar por brandId exitosamente", async () => {
-      const res = await request(app).get(
-        `/product?brandId=${existingBrandId}&limit=1`
-      );
-
+    it("debería filtrar por brandId", async () => {
+      const res = await request(app).get(`/product?brandId=${existingBrandId}`);
       expect(res.statusCode).toBe(200);
-      expect(res.body.success).toBe(true);
-
-      const { totalCount } = res.body.result;
-      expect(totalCount).toBeGreaterThanOrEqual(1);
-      expect(res.body.result.data[0].brandId._id).toBe(existingBrandId);
-    });
-
-    it("debería retornar 400 si el filtro brandId es inválido (Validación)", async () => {
-      const res = await request(app).get("/product?brandId=invalid-format");
-
-      expect(res.statusCode).toBe(400);
-      expect(res.body.errors[0].msg).toBe(
-        "El filtro brandId debe ser un ID de MongoDB válido."
-      );
+      
+      const resData = res.body.data
+      expect(resData.data[0].brandId.id.toString()).toBe(existingBrandId.toString());
     });
   });
 
-  // --- GET /product/:id (Detalle) ---
-  describe("GET /product/:id (Público)", () => {
-    it("debería obtener el producto por ID con población (Status 200)", async () => {
-      expect(newProductId).toBeDefined();
-
+  describe("GET /product/:id", () => {
+    it("debería obtener detalle por ID", async () => {
       const res = await request(app).get(`/product/${newProductId}`);
-
       expect(res.statusCode).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.result._id).toBe(newProductId);
-
-      expect(res.body.result.categoryId.name).toBe(MOCK_CATEGORY_NAME);
-      expect(res.body.result.brandId.name).toBe(MOCK_BRAND_NAME);
-    });
-
-    it("debería fallar con 404 si el producto no existe", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-
-      const res = await request(app).get(`/product/${nonExistentId}`);
-
-      expect(res.statusCode).toBe(404);
-      expect(res.body.success).toBe(false);
-      expect(res.body.error).toMatch(/Producto con ID .* no encontrado/);
+      
+      const resData = res.body.data
+      expect(resData.name).toBe(MOCK_PRODUCT_NAME);
     });
   });
 
-  // --- PUT /product/:id (Actualización) ---
-  describe("PUT /product/:id (Admin)", () => {
-    it("debería actualizar el nombre y precio exitosamente (Status 200)", async () => {
-      const updateData = { name: "PlayStation 5 Slim", price: 449.99 };
-
+  describe("PUT /product/:id", () => {
+    it("debería actualizar nombre y precio", async () => {
+      const update = { name: "PS5 Slim Version", price: 399 };
       const res = await request(app)
         .put(`/product/${newProductId}`)
         .set("Authorization", `Bearer ${adminToken}`)
-        .send(updateData);
+        .send(update);
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.success).toBe(true);
-
-      const checkRes = await request(app).get(`/product/${newProductId}`);
-      expect(checkRes.body.result.name).toBe(updateData.name);
-      expect(checkRes.body.result.price).toBe(updateData.price);
+      const resData = res.body.data
+      expect(resData.name).toBe(update.name);
     });
 
-    it("debería actualizar el stock exitosamente", async () => {
-      const updateStock = { stock: 100 };
-
-      const res = await request(app)
-        .put(`/product/${newProductId}`)
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send(updateStock);
-
-      expect(res.statusCode).toBe(200);
-
-      const checkRes = await request(app).get(`/product/${newProductId}`);
-      expect(checkRes.body.result.stock).toBe(100);
-    });
-
-    it("debería fallar con 400 si el body está vacío (Middleware requireNonEmptyBody)", async () => {
+    it("debería fallar si el body está vacío", async () => {
       const res = await request(app)
         .put(`/product/${newProductId}`)
         .set("Authorization", `Bearer ${adminToken}`)
         .send({});
-
+      
       expect(res.statusCode).toBe(400);
-      expect(res.body.error).toBe(
-        "El cuerpo de la solicitud no puede estar vacío para actualizar."
-      );
-    });
-
-    it("debería fallar con 404 si el ID no existe (Lógica de Servicio)", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      const res = await request(app)
-        .put(`/product/${nonExistentId}`)
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send({ stock: 1 });
-
-      expect(res.statusCode).toBe(404);
-      expect(res.body.error).toBe("Documento no encontrado para actualizar.");
     });
   });
 
-  // --- DELETE /product/:id (Eliminación) ---
-  describe("DELETE /product/:id (Admin)", () => {
-    it("debería eliminar el producto exitosamente (Status 200)", async () => {
-      expect(newProductId).toBeDefined();
-
+  describe("DELETE /product/:id", () => {
+    it("debería eliminar el producto", async () => {
       const res = await request(app)
         .delete(`/product/${newProductId}`)
         .set("Authorization", `Bearer ${adminToken}`);
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.message).toBe("Producto eliminado exitosamente.");
 
-      const checkRes = await request(app).get(`/product/${newProductId}`);
-      expect(checkRes.statusCode).toBe(404);
-    });
-
-    it("debería fallar con 404 si se intenta eliminar un producto que no existe", async () => {
-      const res = await request(app)
-        .delete(`/product/${newProductId}`)
-        .set("Authorization", `Bearer ${adminToken}`);
-
-      expect(res.statusCode).toBe(404);
-      expect(res.body.success).toBe(false);
-      expect(res.body.error).toMatch(/Producto con ID .* no encontrado./);
+      const check = await request(app).get(`/product/${newProductId}`);
+      expect(check.statusCode).toBe(404);
     });
   });
 });

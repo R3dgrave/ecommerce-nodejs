@@ -1,14 +1,12 @@
-/**
- * Factory Function para el controlador de Carrito.
- * @param {CartService} cartService
- */
+const sendResponse = require('../../utils/response.handler');
+
 const CartControllerFactory = (cartService) => {
   return {
     getCart: async (req, res, next) => {
       try {
         const userId = req.user.id;
         const cart = await cartService.getCartByUserId(userId);
-        res.status(200).json({ success: true, result: cart });
+        return sendResponse(res, 200, cart);
       } catch (error) {
         next(error);
       }
@@ -18,16 +16,9 @@ const CartControllerFactory = (cartService) => {
       try {
         const userId = req.user.id;
         const { productId, quantity } = req.body;
-        const updatedCart = await cartService.addItemToCart(
-          userId,
-          productId,
-          quantity
-        );
-        res.status(200).json({
-          success: true,
-          message: "Producto añadido al carrito",
-          result: updatedCart,
-        });
+        const updatedCart = await cartService.addItemToCart(userId, productId, quantity);
+        
+        return sendResponse(res, 200, updatedCart, "Producto añadido al carrito");
       } catch (error) {
         next(error);
       }
@@ -38,11 +29,8 @@ const CartControllerFactory = (cartService) => {
         const userId = req.user.id;
         const { productId } = req.params;
         const updatedCart = await cartService.removeItem(userId, productId);
-        res.status(200).json({
-          success: true,
-          message: "Producto eliminado del carrito",
-          result: updatedCart,
-        });
+        
+        return sendResponse(res, 200, updatedCart, "Producto eliminado del carrito");
       } catch (error) {
         next(error);
       }
@@ -52,10 +40,7 @@ const CartControllerFactory = (cartService) => {
       try {
         const userId = req.user.id;
         await cartService.clearCart(userId);
-        res.status(200).json({
-          success: true,
-          message: "Carrito vaciado exitosamente",
-        });
+        return sendResponse(res, 200, null, "Carrito vaciado exitosamente");
       } catch (error) {
         next(error);
       }

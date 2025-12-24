@@ -1,27 +1,24 @@
-const PaymentService = require("../../../src/services/payment-service");
 const sinon = require("sinon");
+const PaymentService = require("../../../src/services/payment-service");
+const { NotFoundError, BusinessLogicError } = require("../../../src/utils/errors");
 
 describe("PaymentService", () => {
   let paymentService;
-  let paymentRepoMock;
-  let orderRepoMock;
-  let productRepoMock;
-  let stripeMock;
+  let paymentRepoMock, orderRepoMock, productRepoMock, stripeMock;
 
   beforeEach(() => {
+    sinon.restore();
+
     paymentRepoMock = {
       save: sinon.stub(),
-      findByIntentId: sinon.stub(),
-      updateStatusByIntentId: sinon.stub(),
       findBy: sinon.stub(),
+      updateStatusByIntentId: sinon.stub(),
     };
     orderRepoMock = {
       findById: sinon.stub(),
       update: sinon.stub(),
     };
     productRepoMock = {
-      findById: sinon.stub(),
-      update: sinon.stub(),
       updateStock: sinon.stub(),
     };
 
@@ -39,21 +36,10 @@ describe("PaymentService", () => {
     );
   });
 
-  afterEach(() => {
-    sinon.restore();
-  });
-
   describe("createIntent", () => {
-    it("debería crear un PaymentIntent y guardar el registro localmente", async () => {
-      const mockOrder = {
-        _id: "order123",
-        totalAmount: 100,
-        status: "pending",
-      };
-      const mockStripeIntent = {
-        id: "pi_123",
-        client_secret: "secret_123",
-      };
+    it("debería crear un PaymentIntent en Stripe y guardarlo localmente", async () => {
+      const mockOrder = { id: "order123", totalAmount: 100 };
+      const mockStripeIntent = { id: "pi_123", client_secret: "secret_123" };
 
       orderRepoMock.findById.resolves(mockOrder);
       stripeMock.paymentIntents.create.resolves(mockStripeIntent);
@@ -61,13 +47,20 @@ describe("PaymentService", () => {
 
       const result = await paymentService.createIntent("order123", "user123");
 
-      expect(result).toHaveProperty("clientSecret", "secret_123");
+      expect(result.clientSecret).toBe("secret_123");
       expect(stripeMock.paymentIntents.create.calledOnce).toBe(true);
+      expect(stripeMock.paymentIntents.create.firstCall.args[0].amount).toBe(10000);
+    });
+
+    it("debería lanzar NotFoundError si la orden no existe", async () => {
+      orderRepoMock.findById.resolves(null);
+      await expect(paymentService.createIntent("invalid", "user123"))
+        .rejects.toThrow(NotFoundError);
     });
   });
 
   describe("handleWebhook", () => {
-    it("debería procesar payment_intent.succeeded actualizando orden y stock", async () => {
+    it("debería procesar payment_intent.succeeded actualizando orden y pago", async () => {
       const mockEvent = {
         type: "payment_intent.succeeded",
         data: {
@@ -78,53 +71,50 @@ describe("PaymentService", () => {
         },
       };
 
-      const mockOrder = {
-        _id: "order123",
-        items: [{ productId: "prod1", quantity: 2 }],
-      };
+      const mockOrder = { id: "order123", items: [] };
 
       stripeMock.webhooks.constructEvent.returns(mockEvent);
       orderRepoMock.findById.resolves(mockOrder);
       paymentRepoMock.updateStatusByIntentId.resolves(true);
       orderRepoMock.update.resolves(true);
-      productRepoMock.updateStock.resolves(true);
 
-      await paymentService.handleWebhook("sig_123", "raw_body_123");
+      const result = await paymentService.handleWebhook("sig", "body");
 
-      expect(
-        paymentRepoMock.updateStatusByIntentId.calledWith("pi_123", "succeeded")
-      ).toBe(true);
-
-      expect(productRepoMock.updateStock.calledWith("prod1", -2)).toBe(true);
+      expect(result.received).toBe(true);
+      expect(paymentRepoMock.updateStatusByIntentId.calledWith("pi_123", "succeeded")).toBe(true);
+      expect(orderRepoMock.update.calledWith("order123", sinon.match.has("status", "paid"))).toBe(true);
     });
   });
 
   describe("processRefund", () => {
-    it("debería ejecutar el reembolso en Stripe y devolver el stock", async () => {
-      const mockPayment = {
-        stripePaymentIntentId: "pi_123",
-        orderId: "order123",
-        status: "succeeded",
-      };
+    it("debería ejecutar reembolso en Stripe y devolver stock al inventario", async () => {
+      const mockPayment = { stripePaymentIntentId: "pi_123", orderId: "order123" };
       const mockOrder = {
-        _id: "order123",
-        items: [{ productId: "prod1", quantity: 1 }],
+        id: "order123",
+        items: [{ productId: "prod1", quantity: 2 }]
       };
 
       paymentRepoMock.findBy.resolves([mockPayment]);
       orderRepoMock.findById.resolves(mockOrder);
       stripeMock.refunds.create.resolves({ id: "re_123" });
       productRepoMock.updateStock.resolves(true);
+      paymentRepoMock.updateStatusByIntentId.resolves(true);
+      orderRepoMock.update.resolves(true);
 
-      const result = await paymentService.processRefund(
-        "order123",
-        "requested_by_customer"
-      );
+      const result = await paymentService.processRefund("order123", "requested_by_customer");
 
-      expect(result).toHaveProperty("id", "re_123");
-      expect(stripeMock.refunds.create.calledOnce).toBe(true);
-      // Verificamos que se devolvió el stock (valor positivo)
-      expect(productRepoMock.updateStock.calledWith("prod1", 1)).toBe(true);
+      expect(result.id).toBe("re_123");
+      expect(productRepoMock.updateStock.calledWith("prod1", 2)).toBe(true);
+      expect(orderRepoMock.update.calledWith("order123", { status: "cancelled" })).toBe(true);
+    });
+
+    it("debería lanzar BusinessLogicError si Stripe falla", async () => {
+      paymentRepoMock.findBy.resolves([{ stripePaymentIntentId: "pi_fail" }]);
+      orderRepoMock.findById.resolves({ items: [] });
+      stripeMock.refunds.create.rejects(new Error("Stripe Error"));
+
+      await expect(paymentService.processRefund("order123"))
+        .rejects.toThrow(BusinessLogicError);
     });
   });
 });

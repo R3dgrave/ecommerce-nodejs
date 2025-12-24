@@ -7,18 +7,10 @@ const {
   validatePagination
 } = require("../validators/category-validator");
 
-/**
- * Función factory para crear el router de Categorías.
- * @param {CategoryService} categoryService - Instancia del servicio de Categorías.
- * @param {Function} verifyToken - Middleware de autenticación.
- * @param {Function} isAdmin - Middleware de autorización.
- * @returns {express.Router} El router configurado.
- */
 module.exports = function (categoryService, verifyToken, isAdmin) {
   const router = express.Router();
   const categoryController = CategoryControllerFactory(categoryService);
 
-  // POST /category
   router.post(
     "/",
     validateCreateCategory,
@@ -27,7 +19,6 @@ module.exports = function (categoryService, verifyToken, isAdmin) {
     categoryController.createCategory
   );
 
-  // GET /category
   router.get(
     "/",
     validatePagination,
@@ -36,7 +27,6 @@ module.exports = function (categoryService, verifyToken, isAdmin) {
     categoryController.getAllCategories
   );
 
-  // GET /category/:id
   router.get(
     "/:id",
     validateId,
@@ -45,7 +35,6 @@ module.exports = function (categoryService, verifyToken, isAdmin) {
     categoryController.getCategoryById
   );
 
-  // PUT /category/:id
   router.put(
     "/:id",
     validateUpdateCategory,
@@ -54,7 +43,6 @@ module.exports = function (categoryService, verifyToken, isAdmin) {
     categoryController.updateCategory
   );
 
-  // DELETE /category/:id
   router.delete(
     "/:id",
     validateId,

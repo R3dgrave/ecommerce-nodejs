@@ -1,11 +1,5 @@
-const mongoose = require('mongoose');
 const request = require("supertest");
-const { app, closeDatabase, cleanDatabase } = require("./setup.e2e");
-const Product = require('../../src/models/product');
-const Category = require('../../src/models/category');
-const Brand = require('../../src/models/brand');
-const Cart = require('../../src/models/cart');
-const User = require('../../src/models/user');
+const { app, closeDatabase, cleanDatabase, ProductModel, CategoryModel, BrandModel } = require("./setup.e2e");
 
 describe("E2E: Cart Flow", () => {
   let userToken, productId;
@@ -13,26 +7,26 @@ describe("E2E: Cart Flow", () => {
   beforeAll(async () => {
     await cleanDatabase();
 
-    const category = await Category.create({ name: "Test Category Cart" });
-    const brand = await Brand.create({
+    const category = await CategoryModel.create({ name: "Test Category Cart" });
+    const brand = await BrandModel.create({
       name: "Test Brand Cart",
       categoryId: category._id
     });
 
-    await request(app).post('/auth/register').send({
+    const userData = {
       name: "Customer",
       email: "customer@test.com",
       password: "password123"
-    });
+    };
+    await request(app).post('/auth/register').send(userData);
 
     const loginRes = await request(app).post('/auth/login').send({
-      email: "customer@test.com",
-      password: "password123"
+      email: userData.email,
+      password: userData.password
     });
     userToken = loginRes.body.data.token;
 
-    // 4. Crear un producto vinculado a la marca/categoría real
-    const product = await Product.create({
+    const product = await ProductModel.create({
       name: "Cart Test Item",
       price: 50,
       stock: 5,
@@ -41,46 +35,68 @@ describe("E2E: Cart Flow", () => {
       categoryId: category._id,
       brandId: brand._id
     });
-    productId = product._id;
+    productId = product._id.toString();
   });
 
   afterAll(async () => {
     await closeDatabase();
   });
 
-  // Test 1: Stock insuficiente
-  it("POST /cart/add - Debería fallar por stock insuficiente (status 400)", async () => {
-    const res = await request(app)
-      .post("/cart/add")
-      .set("Authorization", `Bearer ${userToken}`)
-      .send({ productId, quantity: 10 });
+  describe("POST /cart/add", () => {
+    it("debería fallar por stock insuficiente usando BusinessLogicError (400)", async () => {
+      const res = await request(app)
+        .post("/cart/add")
+        .set("Authorization", `Bearer ${userToken}`)
+        .send({ productId, quantity: 10 });
 
-    expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/stock insuficiente/i);
+    });
+
+    it("debería añadir producto exitosamente al carrito", async () => {
+      await request(app)
+        .delete("/cart/clear")
+        .set("Authorization", `Bearer ${userToken}`);
+
+      const res = await request(app)
+        .post("/cart/add")
+        .set("Authorization", `Bearer ${userToken}`)
+        .send({ productId, quantity: 2 });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+
+      expect(res.body.data.items.length).toBe(1);
+      expect(res.body.data.items[0].quantity).toBe(2);
+
+      expect(res.body.data.items[0].productId.id).toBe(productId);
+      expect(res.body.data.items[0].productId.name).toBe("Cart Test Item");
+    });
   });
 
-  // Test 2: Añadir con éxito
-  it("POST /cart/add - Debería añadir producto exitosamente", async () => {
-    const payload = JSON.parse(Buffer.from(userToken.split('.')[1], 'base64').toString());
-    const userId = payload.id;
-    await Cart.deleteMany({ userId });
+  describe("GET /cart", () => {
+    it("debería obtener el carrito con los productos populados", async () => {
+      const res = await request(app)
+        .get("/cart")
+        .set("Authorization", `Bearer ${userToken}`);
 
-    const res = await request(app)
-      .post("/cart/add")
-      .set("Authorization", `Bearer ${userToken}`)
-      .send({ productId, quantity: 2 });
+      expect(res.statusCode).toBe(200);
+      const firstItem = res.body.data.items[0];
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body.result.items.length).toBe(1);
-    expect(res.body.result.items[0].quantity).toBe(2);
+      expect(firstItem.productId).toHaveProperty('name', "Cart Test Item");
+      expect(firstItem.productId.id).toBe(productId);
+    });
   });
 
-  // Test 3: Get Cart con Populate
-  it("GET /cart - Debería obtener el carrito del usuario", async () => {
-    const res = await request(app)
-      .get("/cart")
-      .set("Authorization", `Bearer ${userToken}`);
+  describe("DELETE /cart/remove/:productId", () => {
+    it("debería eliminar un item específico del carrito", async () => {
+      const res = await request(app)
+        .delete(`/cart/remove/${productId}`)
+        .set("Authorization", `Bearer ${userToken}`);
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body.result.items[0].productId.name).toBe("Cart Test Item");
+      expect(res.statusCode).toBe(200);
+      expect(res.body.data.items.length).toBe(0);
+    });
   });
 });

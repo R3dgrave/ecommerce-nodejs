@@ -29,6 +29,8 @@ const ProductServiceClass = require("../services/product-service");
 const CartServiceClass = require("../services/cart-service");
 const OrderServiceClass = require("../services/order-service");
 const PaymentServiceClass = require("../services/payment-service");
+const CustomerServiceClass = require("../services/customer-service");
+const authMiddlewareFactory = require("../middlewares/auth-middleware");
 
 /**
  * Instancia y enlaza todas las dependencias de la aplicación.
@@ -49,6 +51,9 @@ function dependencyInjectorLoader() {
 
   // INSTANCIAR SERVICIOS (Necesitan Repositorios y/o Providers)
   const authService = new AuthServiceClass(userRepository, tokenProvider);
+  const authMiddleware = authMiddlewareFactory(tokenProvider, userRepository);
+  
+  const customerService = new CustomerServiceClass(userRepository);
 
   const categoryService = new CategoryServiceClass(
     categoryRepository,
@@ -92,6 +97,7 @@ function dependencyInjectorLoader() {
     cartService,
     orderService,
     paymentService,
+    customerService,
 
     // Repositorios
     userRepository,
@@ -101,6 +107,8 @@ function dependencyInjectorLoader() {
     cartRepository,
     orderRepository,
     paymentRepository,
+
+    authMiddleware,
 
     // Providers
     tokenProvider,

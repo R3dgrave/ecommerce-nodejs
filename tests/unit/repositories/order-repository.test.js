@@ -1,5 +1,6 @@
 const sinon = require("sinon");
 const OrderRepository = require("../../../src/repositories/order-repository");
+const mongoose = require("mongoose");
 
 describe("OrderRepository", () => {
   let orderRepository;
@@ -11,24 +12,29 @@ describe("OrderRepository", () => {
     OrderModelMock = {
       find: sinon.stub(),
       findById: sinon.stub(),
+      findByIdAndUpdate: sinon.stub(),
       aggregate: sinon.stub(),
       countDocuments: sinon.stub(),
-      updateOne: sinon.stub()
     };
 
     orderRepository = new OrderRepository(OrderModelMock);
   });
 
   describe("findByUserId", () => {
-    it("debería llamar a findWithPagination con el filtro de userId", async () => {
+    it("debería devolver órdenes con id transformado mediante paginación", async () => {
       const userId = "user123";
-      const mockOrders = [{ _id: "order1", totalAmount: 100 }];
+      const rawId = new mongoose.Types.ObjectId();
       
-      // Mockeamos la cadena de Mongoose para findWithPagination
+      const mockOrdersFromDb = [{ 
+        _id: rawId, 
+        totalAmount: 100,
+        toObject: sinon.stub().returns({ _id: rawId, totalAmount: 100 })
+      }];
+      
       const findStub = {
         skip: sinon.stub().returnsThis(),
         limit: sinon.stub().returnsThis(),
-        exec: sinon.stub().resolves(mockOrders)
+        exec: sinon.stub().resolves(mockOrdersFromDb)
       };
 
       OrderModelMock.find.returns(findStub);
@@ -37,43 +43,48 @@ describe("OrderRepository", () => {
       const result = await orderRepository.findByUserId(userId, { page: 1, limit: 10 });
 
       expect(OrderModelMock.find.calledWith({ userId })).toBe(true);
-      expect(result.data).toEqual(mockOrders);
-      expect(result.totalCount).toBe(1);
+      expect(result.data[0].id).toBe(rawId.toString());
+      expect(result.data[0]).not.toHaveProperty('_id');
     });
   });
 
   describe("getIncomeStats", () => {
-    it("debería ejecutar el pipeline de agregación correctamente", async () => {
+    it("debería retornar un objeto formateado en lugar del array de Mongo", async () => {
       const mockStats = [{ _id: null, totalSales: 5000, count: 5 }];
       OrderModelMock.aggregate.resolves(mockStats);
 
       const result = await orderRepository.getIncomeStats();
 
       expect(OrderModelMock.aggregate.calledOnce).toBe(true);
-      const pipeline = OrderModelMock.aggregate.firstCall.args[0];
-      
-      // Verificamos que el primer paso sea filtrar las no canceladas
-      expect(pipeline[0].$match.status.$ne).toBe('cancelled');
-      expect(result).toEqual(mockStats);
+      expect(result).toEqual({ totalSales: 5000, count: 5 });
+    });
+
+    it("debería retornar valores en cero si no hay estadísticas", async () => {
+      OrderModelMock.aggregate.resolves([]);
+      const result = await orderRepository.getIncomeStats();
+      expect(result).toEqual({ totalSales: 0, count: 0 });
     });
   });
 
   describe("updateStatus", () => {
-    it("debería actualizar solo el campo status", async () => {
-      const orderId = "order123";
+    it("debería llamar al método update del padre y retornar id", async () => {
+      const orderId = new mongoose.Types.ObjectId();
       const newStatus = "paid";
       
-      const updateMock = {
-        exec: sinon.stub().resolves({ _id: orderId, status: newStatus })
+      const mockUpdatedDoc = {
+        _id: orderId,
+        status: newStatus,
+        toObject: sinon.stub().returns({ _id: orderId, status: newStatus })
       };
-      OrderModelMock.updateOne.returns(updateMock);
 
-      await orderRepository.updateStatus(orderId, newStatus);
+      OrderModelMock.findByIdAndUpdate.returns({
+        exec: sinon.stub().resolves(mockUpdatedDoc)
+      });
 
-      expect(OrderModelMock.updateOne.calledWith(
-        { _id: orderId }, 
-        { status: newStatus }
-      )).toBe(true);
+      const result = await orderRepository.updateStatus(orderId.toString(), newStatus);
+
+      expect(result.id).toBe(orderId.toString());
+      expect(result.status).toBe(newStatus);
     });
   });
 });

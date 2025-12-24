@@ -19,11 +19,29 @@ class UnauthorizedError extends CustomError {
   }
 }
 
-class BusinessLogicError extends CustomError { }
+class ConflictError extends CustomError {
+  constructor(message = "El recurso ya existe.") {
+    super(message, 409);
+  }
+}
+
+class BusinessLogicError extends CustomError {
+  constructor(message = "Error en la lógica de negocio.") {
+    super(message, 400);
+  }
+}
+
+class ForbiddenError extends CustomError {
+  constructor(message = "No tienes permisos para realizar esta acción.") {
+    super(message, 403);
+  }
+}
 
 module.exports = {
   CustomError,
   NotFoundError,
   UnauthorizedError,
   BusinessLogicError,
+  ConflictError,
+  ForbiddenError,
 };

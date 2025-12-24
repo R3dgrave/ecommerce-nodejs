@@ -22,7 +22,6 @@ const validateCreateBrand = [
 ];
 
 const validateUpdateBrand = [
-  // validateId se agrega en la ruta
   optionalBrandNameRule,
 
   body("categoryId")

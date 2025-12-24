@@ -1,13 +1,4 @@
-/**
- * Error personalizado para conflicto de clave única (ej. código 11000 de Mongo)
- */
-class ConflictError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'ConflictError';
-    this.status = 409;
-  }
-}
+const mongoose = require("mongoose");
 
 /**
  * Repositorio base que implementa operaciones CRUD y paginación genéricas.
@@ -18,16 +9,27 @@ class BaseRepository {
     this.Model = Model;
   }
 
+  _isValidId(id) {
+    return mongoose.Types.ObjectId.isValid(id);
+  }
+
   _toPlainObject(doc) {
     if (!doc) return null;
-    return typeof doc.toObject === 'function' ? doc.toObject() : doc;
+    const obj = typeof doc.toObject === 'function' ? doc.toObject({ virtuals: true }) : { ...doc };
+
+    if (obj._id) {
+      obj.id = obj._id.toString();
+      delete obj._id;
+    }
+
+    delete obj.__v;
+    return obj;
   }
 
   _toPlainObjectArray(docs) {
     return docs.map(this._toPlainObject);
   }
 
-  // --- Operaciones CRUD Básicas ---
   async find() {
     return this.findBy({});
   }
@@ -38,6 +40,7 @@ class BaseRepository {
   }
 
   async findById(id) {
+    if (!this._isValidId(id)) return null;
     const document = await this.Model.findById(id).exec();
     return this._toPlainObject(document);
   }
@@ -53,23 +56,35 @@ class BaseRepository {
       return this._toPlainObject(document);
     } catch (error) {
       if (error.code === 11000) {
-        throw new ConflictError("El recurso con esa clave única ya existe.");
+        const conflictError = new Error("Conflict: Unique constraint violated");
+        conflictError.status = 409;
+        throw conflictError;
       }
       throw error;
     }
   }
 
   async update(id, data) {
-    try {
-      const result = await this.Model.updateOne({ _id: id }, data).exec();
+    if (!this._isValidId(id)) {
+      const error = new Error("Formato de ID inválido.");
+      error.status = 400;
+      throw error;
+    }
 
-      if (result.matchedCount === 0) {
+    try {
+      const updatedDocument = await this.Model.findByIdAndUpdate(
+        id,
+        data,
+        { new: true, runValidators: true }
+      ).exec();
+
+      if (!updatedDocument) {
         const notFoundError = new Error("Documento no encontrado para actualizar.");
         notFoundError.status = 404;
         throw notFoundError;
       }
 
-      return result;
+      return this._toPlainObject(updatedDocument);
     } catch (error) {
       if (error.code === 11000) {
         throw new ConflictError("El recurso con esa clave única ya existe.");
@@ -79,11 +94,10 @@ class BaseRepository {
   }
 
   async delete(id) {
+    if (!this._isValidId(id)) return null;
     const result = await this.Model.findByIdAndDelete(id).exec();
     return result;
   }
-
-  // --- Operación de Paginación ---
 
   async findWithPagination(filter = {}, options = {}) {
     const page = parseInt(options.page, 10) || 1;
@@ -109,4 +123,4 @@ class BaseRepository {
   }
 }
 
-module.exports = { BaseRepository, ConflictError };
+module.exports = { BaseRepository };

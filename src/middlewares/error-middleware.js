@@ -1,40 +1,49 @@
 const { CustomError } = require("../utils/errors");
 
+/**
+ * Middleware global para el manejo de errores.
+ * Centraliza todas las respuestas fallidas de la API.
+ */
 function errorHandler(err, req, res, next) {
+  let statusCode = 500;
+  let message = "Ocurrió un error inesperado en el servidor.";
+  let details = undefined;
+
+  // Errores personalizados (NotFoundError, UnauthorizedError, etc.)
   if (err instanceof CustomError) {
-    return res.status(err.statusCode).json({
-      success: false,
-      error: err.message,
-      code: err.statusCode,
-    });
+    statusCode = err.statusCode;
+    message = err.message;
+  } 
+  
+  // Errores de validación de Mongoose
+  else if (err.name === "ValidationError") {
+    statusCode = 400;
+    message = "Error de validación de datos.";
+    details = err.message;
+  } 
+  
+  // Error de clave duplicada en MongoDB (Unique Index)
+  else if (err.code === 11000) {
+    statusCode = 409;
+    message = "El recurso ya existe en nuestra base de datos.";
+  } 
+  
+  // Otros errores con status (como librerías externas o JWT)
+  else if (err.status && err.status >= 400 && err.status < 600) {
+    statusCode = err.status;
+    message = err.message;
   }
 
-  if (err.status && err.status >= 400 && err.status < 500) {
-    // (400, 401, 403, 404, 409)
-    return res.status(err.status).json({
-      success: false,
-      error: err.message,
-      code: err.status,
-    });
+  if (process.env.NODE_ENV !== 'test') {
+    console.error(`[Error ${statusCode}]: ${err.stack || err.message}`);
   }
 
-  if (err.name === "ValidationError") {
-    return res.status(400).json({
-      success: false,
-      error: "Error de validación de datos.",
-      details: err.message,
-    });
-  }
-
-  if (err.code === 11000) {
-    return res
-      .status(409)
-      .json({ success: false, error: "El recurso ya existe" });
-  }
-
-  return res.status(500).json({
+  return res.status(statusCode).json({
     success: false,
-    error: "Ocurrió un error inesperado en el servidor.",
+    message: message,
+    code: statusCode,
+    data: null,
+    ...(details && { details })
   });
 }
 

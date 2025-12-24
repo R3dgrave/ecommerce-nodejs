@@ -1,95 +1,67 @@
-/**
- * Factory function para crear el BrandController.
- * @param {BrandService} brandService - Instancia del servicio de marcas.
- * @returns {object} Un objeto con las funciones del controlador.
- */
+const sendResponse = require('../../utils/response.handler');
+const { NotFoundError } = require('../../utils/errors');
+
 const BrandController = (brandService) => {
 
-  /**
-   * @route POST /brand
-   * Crea una nueva marca.
-   */
   const createBrand = async (req, res, next) => {
     try {
-      const { name, categoryId } = req.body;
-      const result = await brandService.createBrand({ name, categoryId });
-      res.status(201).json({ success: true, result });
+      const result = await brandService.createBrand(req.body);
+      return sendResponse(res, 201, result, "Marca creada exitosamente");
     } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * @route GET /brand/categories/:categoryId
-   * Obtiene marcas por categoría.
-   */
   const getBrandsByCategory = async (req, res, next) => {
     try {
-      const categoryId = req.params.categoryId;
+      const { categoryId } = req.params;
       const brands = await brandService.getBrandsByCategory(categoryId);
-      res.status(200).json({ success: true, brands });
+      return sendResponse(res, 200, brands);
     } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * @route GET /brand/:id
-   * Obtiene una marca por ID.
-   */
   const getBrandById = async (req, res, next) => {
     try {
-      const id = req.params.id;
+      const { id } = req.params;
       const brand = await brandService.getBrandById(id);
 
       if (!brand) {
-        return res
-          .status(404)
-          .json({ success: false, error: "Marca no encontrada." });
+        throw new NotFoundError("Marca no encontrada.");
       }
-      res.status(200).json({ success: true, brand });
+
+      return sendResponse(res, 200, brand);
     } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * @route GET /brand
-   * Obtiene todas las marcas.
-   */
   const getAllBrands = async (req, res, next) => {
     try {
       const brands = await brandService.getAllBrands(req.query);
-      res.status(200).json({ success: true, brands });
+      return sendResponse(res, 200, brands);
     } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * @route PUT /brand/:id
-   * Actualiza una marca.
-   */
   const updateBrand = async (req, res, next) => {
     try {
-      const id = req.params.id;
-      const model = req.body;
-      await brandService.updateBrand(id, model);
-      res.status(200).json({ success: true, message: "Marca actualizada exitosamente." });
+      const { id } = req.params;
+      const updated = await brandService.updateBrand(id, req.body);
+
+      return sendResponse(res, 200, updated, "Marca actualizada exitosamente.");
     } catch (error) {
       next(error);
     }
   };
 
-  /**
-   * @route DELETE /brand/:id
-   * Elimina una marca.
-   */
   const deleteBrand = async (req, res, next) => {
     try {
-      const id = req.params.id;
+      const { id } = req.params;
       await brandService.deleteBrand(id);
-      res.status(200).json({ success: true, message: "Marca eliminada correctamente." });
+      return sendResponse(res, 200, null, "Marca eliminada correctamente");
     } catch (error) {
       next(error);
     }

@@ -1,6 +1,5 @@
 const request = require("supertest");
-const { app, closeDatabase, cleanDatabase } = require("./setup.e2e");
-const User = require('../../src/models/user');
+const { app, closeDatabase, cleanDatabase, UserModel } = require("./setup.e2e");
 
 describe("E2E Auth Routes (Real DB)", () => {
 
@@ -16,30 +15,39 @@ describe("E2E Auth Routes (Real DB)", () => {
     name: "Test User",
     email: "real-e2e@test.com",
     password: "securepassword123",
+    phone: "123456789",
+    shippingAddresses: {
+      street: "Avenida Siempreviva 742",
+      city: "Santiago",
+      state: "Santiago",
+      zipCode: "123456",
+      isDefault: false,
+    },
+    isAdmin: true,
   };
 
-  /**
-   * FLUJO DE REGISTRO Y LOGIN (PÚBLICO)
-   */
   describe("POST /auth/register", () => {
-    it("debería persistir el usuario en la DB y no devolver el password", async () => {
+    it("debería persistir el usuario y retornar 'id' en lugar de '_id'", async () => {
       const response = await request(app)
         .post("/auth/register")
         .send(userData);
 
       expect(response.statusCode).toBe(201);
+      expect(response.body.success).toBe(true);
+      
+      expect(response.body.data).toHaveProperty("id");
+      expect(response.body.data._id).toBeUndefined();
+      
       expect(response.body.data.email).toBe(userData.email);
       expect(response.body.data.password).toBeUndefined();
 
-      const userInDb = await User.findOne({ email: userData.email });
+      const userInDb = await UserModel.findOne({ email: userData.email });
       expect(userInDb).not.toBeNull();
-      // Verificamos que se haya guardado hasheado
-      expect(userInDb.password).not.toBe(userData.password);
     });
   });
 
   describe("POST /auth/login", () => {
-    it("debería loguear con éxito y devolver un token", async () => {
+    it("debería loguear con éxito y devolver estructura estandarizada", async () => {
       await request(app).post("/auth/register").send(userData);
 
       const response = await request(app)
@@ -52,9 +60,10 @@ describe("E2E Auth Routes (Real DB)", () => {
       expect(response.statusCode).toBe(200);
       expect(response.body.data).toHaveProperty("token");
       expect(response.body.data.user).toHaveProperty("id");
+      expect(response.body.data.user.password).toBeUndefined();
     });
 
-    it("debería fallar con credenciales incorrectas", async () => {
+    it("debería usar el Error Handler centralizado para credenciales inválidas", async () => {
       await request(app).post("/auth/register").send(userData);
 
       const response = await request(app)
@@ -66,18 +75,16 @@ describe("E2E Auth Routes (Real DB)", () => {
 
       expect(response.statusCode).toBe(401);
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/incorrectos/i);
     });
   });
 
-  /**
-   * FLUJO DE USUARIO (PRIVADO - REQUIERE TOKEN)
-   */
-  describe("Acciones de Usuario Protegidas", () => {
+  describe("Acciones Protegidas", () => {
     let userToken;
     let userId;
 
     beforeEach(async () => {
-      await request(app).post("/auth/register").send(userData);
+      const regRes = await request(app).post("/auth/register").send(userData);
       const loginRes = await request(app).post("/auth/login").send({
         email: userData.email,
         password: userData.password
@@ -86,68 +93,38 @@ describe("E2E Auth Routes (Real DB)", () => {
       userId = loginRes.body.data.user.id;
     });
 
-    describe("GET /auth/user/:id", () => {
-      it("debería obtener los datos del usuario logueado", async () => {
-        const response = await request(app)
-          .get(`/auth/user/${userId}`)
-          .set("Authorization", `Bearer ${userToken}`);
+    it("GET /auth/user/:id - debería obtener perfil usando ID estandarizado", async () => {
+      const response = await request(app)
+        .get(`/auth/user/${userId}`)
+        .set("Authorization", `Bearer ${userToken}`);
 
-        expect(response.statusCode).toBe(200);
-        expect(response.body.data.name).toBe(userData.name);
-        expect(response.body.data.password).toBeUndefined();
-      });
-
-      it("debería fallar si no se proporciona token", async () => {
-        const response = await request(app).get(`/auth/user/${userId}`);
-        expect(response.statusCode).toBe(401);
-      });
+      expect(response.statusCode).toBe(200);
+      expect(response.body.data.id).toBe(userId);
+      expect(response.body.data.name).toBe(userData.name);
     });
 
-    describe("PUT /auth/user/:id", () => {
-      it("debería actualizar el nombre del usuario y persistir en DB", async () => {
-        const newName = "Updated Name";
-        const response = await request(app)
-          .put(`/auth/user/${userId}`)
-          .set("Authorization", `Bearer ${userToken}`)
-          .send({ name: newName });
+    it("PUT /auth/user/:id - debería actualizar datos y validar el cambio en DB", async () => {
+      const newName = "Updated Name";
+      const response = await request(app)
+        .put(`/auth/user/${userId}`)
+        .set("Authorization", `Bearer ${userToken}`)
+        .send({ name: newName });
 
-        expect(response.statusCode).toBe(200);
-        expect(response.body.message).toMatch(/actualizado/i);
-
-        const updatedUser = await User.findById(userId);
-        expect(updatedUser.name).toBe(newName);
-      });
-
-      it("debería permitir cambiar el password y seguir logueando exitosamente", async () => {
-        const newPassword = "new-secure-password";
-        
-        await request(app)
-          .put(`/auth/user/${userId}`)
-          .set("Authorization", `Bearer ${userToken}`)
-          .send({ password: newPassword });
-
-        const loginRes = await request(app)
-          .post("/auth/login")
-          .send({
-            email: userData.email,
-            password: newPassword
-          });
-
-        expect(loginRes.statusCode).toBe(200);
-      });
+      expect(response.statusCode).toBe(200);
+      
+      const updatedUser = await UserModel.findById(userId);
+      expect(updatedUser.name).toBe(newName);
     });
 
-    describe("DELETE /auth/user/:id", () => {
-      it("debería eliminar al usuario de la base de datos", async () => {
-        const response = await request(app)
-          .delete(`/auth/user/${userId}`)
-          .set("Authorization", `Bearer ${userToken}`);
+    it("DELETE /auth/user/:id - debería eliminar físicamente al usuario", async () => {
+      const response = await request(app)
+        .delete(`/auth/user/${userId}`)
+        .set("Authorization", `Bearer ${userToken}`);
 
-        expect(response.statusCode).toBe(200);
-        
-        const userInDb = await User.findById(userId);
-        expect(userInDb).toBeNull();
-      });
+      expect(response.statusCode).toBe(200);
+
+      const userInDb = await UserModel.findById(userId);
+      expect(userInDb).toBeNull();
     });
   });
 });

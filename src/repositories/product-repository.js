@@ -6,13 +6,6 @@ class ProductRepository extends BaseRepository {
     super(Product);
   }
 
-  /**
-   * @private
-   * Aplica las opciones de población (populate) al query de Mongoose.
-   * @param {mongoose.Query} query - El query de Mongoose.
-   * @param {Object} populateOptions - Opciones de población { populateBrand: bool, populateCategory: bool }
-   * @returns {mongoose.Query} - El query modificado.
-   */
   _applyPopulate(query, populateOptions = {}) {
     if (populateOptions.populateBrand) {
       query = query.populate("brandId", "name categoryId");
@@ -27,10 +20,9 @@ class ProductRepository extends BaseRepository {
     return query;
   }
 
-  /**
-   * Sobreescribe findById para permitir la población.
-   */
   async findById(id, populateOptions = {}) {
+    if (!this._isValidId(id)) return null;
+
     let query = this.Model.findById(id);
     query = this._applyPopulate(query, populateOptions);
 
@@ -38,9 +30,6 @@ class ProductRepository extends BaseRepository {
     return this._toPlainObject(document);
   }
 
-  /**
-   * Sobreescribe findBy para permitir la población.
-   */
   async findBy(filter, populateOptions = {}) {
     let query = this.Model.find(filter);
     query = this._applyPopulate(query, populateOptions);
@@ -49,33 +38,21 @@ class ProductRepository extends BaseRepository {
     return this._toPlainObjectArray(documents);
   }
 
-  /**
-   * Encuentra productos por categoryId. (Usa findBy modificado)
-   */
   async findByCategoryId(categoryId, populateOptions = {}) {
     const filter = { categoryId };
     return this.findBy(filter, populateOptions);
   }
 
-  /**
-   * Encuentra productos por brandId. (Usa findBy modificado)
-   */
   async findByBrandId(brandId, populateOptions = {}) {
     const filter = { brandId };
     return this.findBy(filter, populateOptions);
   }
 
-  /**
-   * Cuenta cuántos productos existen para una marca dada.
-   */
   async countByBrandId(brandId) {
     const filter = { brandId };
     return this.count(filter);
   }
 
-  /**
-   * Cuenta cuántos productos existen para una categoría dada.
-   */
   async countByCategoryId(categoryId) {
     const filter = { categoryId };
     return this.count(filter);
@@ -106,11 +83,13 @@ class ProductRepository extends BaseRepository {
   }
 
   async updateStock(productId, quantity) {
-    return await this.Model.findByIdAndUpdate(
+    const updated = await this.Model.findByIdAndUpdate(
       productId,
       { $inc: { stock: quantity } },
       { new: true }
-    );
+    ).exec();
+
+    return this._toPlainObject(updated);
   }
 }
 

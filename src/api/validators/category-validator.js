@@ -10,7 +10,6 @@ const {
 const categoryNameRule = createNameValidationRule("categoría");
 const optionalCategoryNameRule = createOptionalNameValidationRule("categoría");
 
-
 const validateCreateCategory = [
   categoryNameRule,
   handleValidationErrors,

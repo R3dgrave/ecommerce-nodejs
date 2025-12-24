@@ -11,8 +11,6 @@ describe("CartRepository", () => {
 
     MockCartModel = {
       findOne: sinon.stub(),
-      findOneAndUpdate: sinon.stub(),
-      create: sinon.stub()
     };
 
     cartRepository = new CartRepository(MockCartModel);
@@ -20,15 +18,25 @@ describe("CartRepository", () => {
 
   describe("findByUserId", () => {
     it("debería buscar un carrito por userId y poblar los productos", async () => {
+      const mockCartFromDb = {
+        _id: new mongoose.Types.ObjectId(),
+        userId: "user123",
+        items: [],
+        toObject: sinon.stub().returns({ _id: "507f1f0876201", userId: "user123", items: [] })
+      };
+
       const mockQuery = {
         populate: sinon.stub().returnsThis(),
-        exec: sinon.stub().resolves({})
+        exec: sinon.stub().resolves(mockCartFromDb)
       };
+
       MockCartModel.findOne.returns(mockQuery);
 
-      await cartRepository.findByUserId("123");
+      const result = await cartRepository.findByUserId("user123");
 
-      expect(MockCartModel.findOne.calledOnce).toBe(true);
+      expect(result.id).toBeDefined();
+      expect(result._id).toBeUndefined();
+      expect(MockCartModel.findOne.calledWith({ userId: "user123" })).toBe(true);
     });
   });
 });

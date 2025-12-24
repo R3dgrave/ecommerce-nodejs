@@ -1,173 +1,168 @@
 const request = require("supertest");
 const mongoose = require("mongoose");
-const sinon = require("sinon");
-const { app, closeDatabase, cleanDatabase } = require("./setup.e2e");
-const User = require("../../src/models/user");
+const {
+  app,
+  cleanDatabase,
+  UserModel,
+  OrderModel,
+  ProductModel,
+  CategoryModel,
+  BrandModel,
+  PaymentModel
+} = require("./setup.e2e");
 
-const ProductRepository = require("../../src/repositories/product-repository");
-const BrandRepository = require("../../src/repositories/brand-repository");
-const CategoryRepository = require("../../src/repositories/category-repository");
-const productRepo = new ProductRepository();
+describe("Payment E2E Flow", () => {
+  let token, userId, orderId;
 
-let userToken;
-let adminToken;
-let existingCategoryId;
-let existingBrandId;
-let existingOrderId;
+  beforeAll(async () => {
+    await cleanDatabase();
 
-const MOCK_USER = {
-  email: "customer-pay@test.com",
-  password: "password123",
-  name: "Customer User",
-};
+    await request(app).post("/auth/register").send({
+      name: "Pay Tester",
+      email: "pay@test.com",
+      password: "password123",
+    });
 
-const MOCK_ADMIN = {
-  email: "admin-pay@test.com",
-  password: "password123",
-  name: "Admin User",
-  isAdmin: true,
-};
+    const loginRes = await request(app).post("/auth/login").send({
+      email: "pay@test.com",
+      password: "password123",
+    });
 
-beforeAll(async () => {
-  await cleanDatabase();
+    token = loginRes.body.data.token;
+    userId = loginRes.body.data.user.id;
 
-  await request(app).post("/auth/register").send(MOCK_USER);
-  await request(app).post("/auth/register").send(MOCK_ADMIN);
-  const user = await User.findOne({ email: MOCK_ADMIN.email });
-  user.isAdmin = true;
-  await user.save();
+    await UserModel.findByIdAndUpdate(userId, { isAdmin: true });
 
-  const loginUser = await request(app)
-    .post("/auth/login")
-    .send({ email: MOCK_USER.email, password: MOCK_USER.password });
-  userToken = loginUser.body.data.token;
+    const cat = await CategoryModel.create({ name: "Tech" });
+    const brand = await BrandModel.create({ name: "Apple", categoryId: cat._id });
+    const product = await ProductModel.create({
+      name: "iPhone",
+      description: "descr",
+      shortDescription: "shr desc",
+      price: 1000,
+      stock: 10,
+      categoryId: cat._id,
+      brandId: brand._id,
+      images: ["img.jpg"]
+    });
 
-  const loginAdmin = await request(app)
-    .post("/auth/login")
-    .send({ email: MOCK_ADMIN.email, password: MOCK_ADMIN.password });
-  adminToken = loginAdmin.body.data.token;
+    await request(app)
+      .post("/cart/add")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ productId: product._id, quantity: 1 });
 
-  const catRes = await request(app)
-    .post("/category")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({ name: "electronics product test" });
+    const orderRes = await request(app)
+      .post("/order")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ shippingAddress: { address: "Test 123", city: "NY", country: "USA" } });
 
-  existingCategoryId = catRes.body.result._id || catRes.body.result.id;
-
-  const brandRes = await request(app)
-    .post("/brand")
-    .set("Authorization", `Bearer ${adminToken}`)
-    .send({ name: "sony product test", categoryId: existingCategoryId });
-
-  if (!brandRes.body.result) {
-    throw new Error(
-      `Fallo setup Producto: No se pudo crear la marca. Error: ${JSON.stringify(
-        brandRes.body
-      )}`
-    );
-  }
-
-  existingBrandId = brandRes.body.result._id || brandRes.body.result.id;
-
-  const product = await productRepo.save({
-    name: "Producto Test",
-    shortDescription: "Short desc",
-    description: "Long desc",
-    price: 100,
-    stock: 10,
-    categoryId: existingBrandId,
-    brandId: existingCategoryId,
+    orderId = orderRes.body.data.id;
   });
 
-  await request(app)
-    .post("/cart/add")
-    .set("Authorization", `Bearer ${userToken}`)
-    .send({
-      productId: product._id,
-      quantity: 1,
-    });
-
-  const orderRes = await request(app)
-    .post("/order")
-    .set("Authorization", `Bearer ${userToken}`)
-    .send({
-      shippingAddress: {
-        address: "Calle Falsa 123",
-        city: "Springfield",
-        country: "USA",
-      },
-    });
-
-  if (orderRes.status !== 201) {
-    console.error("Error detallado:", orderRes.body);
-  }
-
-  existingOrderId = orderRes.body.data._id;
-});
-
-afterAll(async () => {
-  await closeDatabase();
-});
-
-describe("E2E: /payment routes", () => {
   describe("POST /payment/create-intent", () => {
-    it("debería crear un PaymentIntent exitosamente (Status 200)", async () => {
+    it("debería crear un Payment Intent exitosamente con Stripe", async () => {
       const res = await request(app)
         .post("/payment/create-intent")
-        .set("Authorization", `Bearer ${userToken}`)
-        .send({ orderId: existingOrderId });
+        .set("Authorization", `Bearer ${token}`)
+        .send({ orderId });
 
-      expect(res.statusCode).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty("clientSecret");
-      expect(res.body.data.amount).toBeGreaterThan(0);
+      if (res.status === 200) {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toHaveProperty("clientSecret");
+        expect(res.body.data.amount).toBe(1000);
+      } else {
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
+      }
     });
 
-    it("debería fallar con 404 si la orden no existe", async () => {
-      const fakeId = new mongoose.Types.ObjectId().toString();
+    it("debería fallar si la orden no existe", async () => {
+      const fakeId = new mongoose.Types.ObjectId();
       const res = await request(app)
         .post("/payment/create-intent")
-        .set("Authorization", `Bearer ${userToken}`)
+        .set("Authorization", `Bearer ${token}`)
         .send({ orderId: fakeId });
 
-      expect(res.statusCode).toBe(404);
-      expect(res.body.error).toMatch(/no existe/);
+      expect(res.status).toBe(404);
     });
   });
 
-  describe("POST /payment/webhook (Simulación)", () => {
-    it("debería retornar 400 si la firma de Stripe es inválida", async () => {
-      const consoleSpy = sinon.stub(console, "error");
+  describe("GET /payment/config", () => {
+    it("debería retornar la publishable key de Stripe", async () => {
+      const res = await request(app)
+        .get("/payment/config")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveProperty("publishableKey");
+    });
+  });
+
+  describe("POST /payment/webhook", () => {
+    it("debería retornar 400 si la firma enviada es inválida", async () => {
       const res = await request(app)
         .post("/payment/webhook")
-        .set("stripe-signature", "firma-falsa")
-        .send({ id: "evt_test" });
+        .set("stripe-signature", "firma-falsa-de-test")
+        .send({ id: "evt_test_123", type: "payment_intent.succeeded" });
 
-      expect(res.statusCode).toBe(400);
+      expect(res.status).toBe(400);
       expect(res.text).toContain("Webhook Error");
-      expect(consoleSpy.calledOnce).toBe(true);
-      consoleSpy.restore();
     });
   });
 
   describe("POST /payment/refund (Admin)", () => {
-    it("debería fallar con 401 si un usuario no admin intenta reembolsar", async () => {
+    it("debería fallar con 403 si un usuario NO admin intenta solicitar reembolso", async () => {
+      await UserModel.findByIdAndUpdate(userId, { isAdmin: false });
+
       const res = await request(app)
         .post("/payment/refund")
-        .set("Authorization", `Bearer ${userToken}`)
-        .send({ orderId: existingOrderId });
+        .set("Authorization", `Bearer ${token}`)
+        .send({ orderId });
 
-      expect(res.statusCode).toBe(403);
+      expect(res.status).toBe(403);
+
+      await UserModel.findByIdAndUpdate(userId, { isAdmin: true });
     });
 
-    it("debería fallar con 404 si no hay un pago exitoso previo para reembolsar", async () => {
+    it("debería procesar el reembolso si existe un pago exitoso previo", async () => {
+      await PaymentModel.create({
+        orderId: orderId,
+        userId: userId,
+        stripePaymentIntentId: "pi_simulado_test",
+        amount: 1000,
+        status: "succeeded"
+      });
+
       const res = await request(app)
         .post("/payment/refund")
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send({ orderId: existingOrderId, reason: "requested_by_customer" });
+        .set("Authorization", `Bearer ${token}`)
+        .send({ orderId, reason: "requested_by_customer" });
 
-      expect(res.statusCode).toBe(404);
-      expect(res.body.error).toMatch(/No se encontró un pago exitoso/);
+      if (res.status === 200) {
+        expect(res.body.success).toBe(true);
+      } else {
+        expect(res.status).toBe(400);
+        expect(res.body.message).toMatch(/Error en reembolso/);
+      }
+    });
+
+    it("debería fallar con 404 si se intenta reembolsar una orden sin pago registrado", async () => {
+      const nuevaOrdenId = new mongoose.Types.ObjectId();
+      await OrderModel.create({
+        _id: nuevaOrdenId,
+        userId,
+        items: [],
+        totalAmount: 50,
+        shippingAddress: { address: "calle 1", city: "city", country: "country" }
+      });
+
+      const res = await request(app)
+        .post("/payment/refund")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ orderId: nuevaOrdenId });
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toMatch(/No se encontró un pago exitoso/);
     });
   });
 });

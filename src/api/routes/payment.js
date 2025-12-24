@@ -23,10 +23,7 @@ module.exports = function (paymentService, verifyToken, isAdmin) {
     validateRefund
   ], paymentController.refund);
 
-  /**
-   * POST /payment/webhook
-   * IMPORTANTE: No lleva validadores de express ni middlewares de auth ya que stripe necesita enviar el body en crudo (raw) y sin interferencias.
-   */
+  //IMPORTANTE: No lleva validadores de express ni middlewares de auth ya que stripe necesita enviar el body en crudo (raw) y sin interferencias.
   router.post('/webhook', paymentController.webhook);
 
   return router;

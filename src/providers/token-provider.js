@@ -17,7 +17,7 @@ class TokenProvider {
     return jwt.sign(payload, this.secret, { expiresIn: this.expiresIn });
   }
 
-  verify(token) {
+  verifyToken(token) {
     return jwt.verify(token, this.secret);
   }
 }

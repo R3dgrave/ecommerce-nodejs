@@ -2,7 +2,7 @@ const sinon = require("sinon");
 const BrandRepository = require("../../../src/repositories/brand-repository");
 const MockBrandModel = {};
 const MOCK_CATEGORY_ID = 'cat123';
-const MOCK_BRAND_DATA = { name: 'Samsung', categoryId: MOCK_CATEGORY_ID };
+const MOCK_BRAND_DATA = { id: 'brand555', name: 'Samsung', categoryId: MOCK_CATEGORY_ID };
 
 describe("BrandRepository", () => {
   let brandRepository;
