@@ -1,5 +1,11 @@
 const request = require("supertest");
-const { app, cleanDatabase, UserModel, OrderModel, CartModel, ProductModel } = require("./setup.e2e");
+const {
+  app,
+  cleanDatabase,
+  UserModel,
+  CartModel,
+  ProductModel,
+} = require("./setup.e2e");
 
 describe("Order E2E Flow", () => {
   let token;
@@ -101,7 +107,9 @@ describe("Order E2E Flow", () => {
       const cart = await CartModel.findOne({ userId });
       expect(cart.items).toHaveLength(0);
 
-      const updatedProduct = await ProductModel.findById(product.id || product._id);
+      const updatedProduct = await ProductModel.findById(
+        product.id || product._id
+      );
       expect(updatedProduct.stock).toBe(12);
     });
 
@@ -140,9 +148,10 @@ describe("Order E2E Flow", () => {
       const ordersRes = await request(app)
         .get("/order")
         .set("Authorization", `Bearer ${token}`);
-      
-      const orderId = ordersRes.body.data.data[0].id || ordersRes.body.data.data[0]._id;  
-        
+
+      const orderId =
+        ordersRes.body.data.data[0].id || ordersRes.body.data.data[0]._id;
+
       const res = await request(app)
         .get(`/order/${orderId}`)
         .set("Authorization", `Bearer ${token}`);
@@ -158,6 +167,25 @@ describe("Order E2E Flow", () => {
         .set("Authorization", `Bearer ${token}`);
 
       expect(res.status).toBe(404);
+    });
+  });
+
+  describe("DELETE /order/:id/cancel", () => {
+    it("debería cancelar una orden pendiente y devolver el stock", async () => {
+      const orders = await request(app)
+        .get("/order")
+        .set("Authorization", `Bearer ${token}`);
+      const orderId = orders.body.data.data[0].id;
+
+      const res = await request(app)
+        .patch(`/order/${orderId}/cancel`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.status).toBe("cancelled");
+
+      const updatedProduct = await ProductModel.findById(product.id);
+      expect(updatedProduct.stock).toBe(15);
     });
   });
 });

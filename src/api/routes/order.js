@@ -12,6 +12,7 @@ module.exports = function (orderService, verifyToken) {
   router.post("/", validateCreateOrder, orderController.create);
   router.get("/", orderController.getMyOrders);
   router.get("/:id", validateGetOrderById, orderController.getById);
+  router.patch("/:id/cancel", validateGetOrderById, orderController.cancel);
 
   return router;
 };

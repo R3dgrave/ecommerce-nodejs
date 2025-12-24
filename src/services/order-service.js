@@ -1,10 +1,11 @@
 const { NotFoundError, BusinessLogicError, CustomError } = require("../utils/errors");
 
 class OrderService {
-  constructor(orderRepository, cartRepository, productRepository) {
+  constructor(orderRepository, cartRepository, productRepository, userRepository) {
     this.orderRepository = orderRepository;
     this.cartRepository = cartRepository;
     this.productRepository = productRepository;
+    this.userRepository = userRepository;
   }
 
   async createOrder(userId, shippingData) {
@@ -14,6 +15,25 @@ class OrderService {
       throw new BusinessLogicError("El carrito está vacío.");
     }
 
+    let finalShippingAddress = shippingData;
+
+    if (!finalShippingAddress || Object.keys(finalShippingAddress).length === 0) {
+      const user = await this.userRepository.findById(userId);
+      const defaultAddress = user.shippingAddresses.find(addr => addr.isDefault);
+
+      if (!defaultAddress) {
+        throw new BusinessLogicError("Debe proporcionar una dirección o tener una por defecto en su perfil.");
+      }
+
+      finalShippingAddress = {
+        street: defaultAddress.street,
+        city: defaultAddress.city,
+        state: defaultAddress.state,
+        zipCode: defaultAddress.zipCode,
+        country: "Chile"
+      };
+    }
+
     for (const item of cart.items) {
       if (item.productId.stock < item.quantity) {
         throw new BusinessLogicError(`Stock insuficiente para: ${item.productId.name}`);
@@ -21,7 +41,7 @@ class OrderService {
     }
 
     const orderItems = cart.items.map(item => ({
-      productId: item.productId.id, 
+      productId: item.productId.id,
       name: item.productId.name,
       price: item.productId.price,
       quantity: item.quantity
@@ -60,6 +80,32 @@ class OrderService {
     }
 
     return order;
+  }
+
+  async cancelOrder(orderId, userId) {
+    const order = await this.orderRepository.findById(orderId);
+    if (!order) throw new NotFoundError("Orden no encontrada");
+
+    if (order.userId.toString() !== userId.toString()) {
+      throw new CustomError("No tienes permiso para cancelar esta orden", 403);
+    }
+
+    if (order.status !== 'pending') {
+      throw new BusinessLogicError(`No se puede cancelar una orden en estado: ${order.status}. Contacte a soporte para un reembolso.`);
+    }
+
+    const updatedOrder = await this.orderRepository.update(orderId, { 
+      status: 'cancelled',
+      $push: { statusHistory: { status: 'cancelled', comment: 'Cancelada por el usuario.' } }
+    });
+
+    const restockUpdates = order.items.map(item =>
+      this.productRepository.updateStock(item.productId, item.quantity)
+    );
+
+    await Promise.all(restockUpdates);
+
+    return updatedOrder;
   }
 }
 

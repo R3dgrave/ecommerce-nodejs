@@ -7,6 +7,7 @@ class OrderController {
     this.create = this.create.bind(this);
     this.getMyOrders = this.getMyOrders.bind(this);
     this.getById = this.getById.bind(this);
+    this.cancel = this.cancel.bind(this);
   }
 
   async create(req, res, next) {
@@ -45,6 +46,19 @@ class OrderController {
       if (!order) throw new NotFoundError("Orden no encontrada");
 
       return sendResponse(res, 200, order, "Detalles de la orden");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async cancel(req, res, next) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+
+      const cancelledOrder = await this.orderService.cancelOrder(id, userId);
+      
+      return sendResponse(res, 200, cancelledOrder, "Orden cancelada exitosamente y stock devuelto.");
     } catch (error) {
       next(error);
     }

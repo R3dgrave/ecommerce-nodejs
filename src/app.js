@@ -12,6 +12,7 @@ const cartRoutesFactory = require("./api/routes/cart");
 const orderRoutesFactory = require("./api/routes/order");
 const paymentRoutesFactory = require("./api/routes/payment");
 const customerRoutesFactory = require("./api/routes/customer");
+const wishlistRoutesFactory = require("./api/routes/wishlist-routes");
 
 const app = express();
 
@@ -45,6 +46,7 @@ function createApp(dependencies) {
     cartService,
     orderService,
     paymentService,
+    wishlistService,
     authMiddleware,
   } = dependencies;
 
@@ -52,6 +54,7 @@ function createApp(dependencies) {
   const { verifyToken, isAdmin } = authMiddleware;
   app.use("/auth", authRoutesFactory(authService, verifyToken));
   app.use("/customer", customerRoutesFactory(customerService, verifyToken));
+  app.use("/wishlist", wishlistRoutesFactory(wishlistService, verifyToken));
 
   app.use("/category", categoryRoutesFactory(categoryService, verifyToken, isAdmin));
   app.use("/brand", brandRoutesFactory(brandService, verifyToken, isAdmin));

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const { createApp } = require("../../src/app");
 const { databaseLoader, closeDatabase } = require("../../src/loaders/database");
 
@@ -9,6 +9,7 @@ const ProductRepositoryClass = require("../../src/repositories/product-repositor
 const CartRepositoryClass = require("../../src/repositories/cart-repository");
 const OrderRepositoryClass = require("../../src/repositories/order-repository");
 const PaymentRepositoryClass = require("../../src/repositories/payment-repository");
+const WishlistRepositoryClass = require("../../src/repositories/wishlist-repository");
 
 const AuthServiceClass = require("../../src/services/auth-service");
 const CategoryServiceClass = require("../../src/services/category-service");
@@ -18,6 +19,7 @@ const CartServiceClass = require("../../src/services/cart-service");
 const OrderServiceClass = require("../../src/services/order-service");
 const PaymentServiceClass = require("../../src/services/payment-service");
 const CustomerServiceClass = require("../../src/services/customer-service");
+const WishlistServiceClass = require("../../src/services/wishlist-service");
 
 const authMiddlewareFactory = require("../../src/middlewares/auth-middleware");
 
@@ -28,6 +30,7 @@ const ProductModel = require("../../src/models/product");
 const CartModel = require("../../src/models/cart");
 const OrderModel = require("../../src/models/order");
 const PaymentModel = require("../../src/models/payment");
+const WishlistModel = require("../../src/models/wishlist");
 
 const TokenProviderClass = require("../../src/providers/token-provider");
 const config = require("../../config/index");
@@ -39,6 +42,7 @@ const productRepository = new ProductRepositoryClass(ProductModel);
 const cartRepository = new CartRepositoryClass(CartModel);
 const orderRepository = new OrderRepositoryClass(OrderModel);
 const paymentRepository = new PaymentRepositoryClass(PaymentModel);
+const wishlistRepository = new WishlistRepositoryClass(WishlistModel);
 
 const tokenProvider = new TokenProviderClass(
   config.jwtSecret || "default-secret-test"
@@ -67,20 +71,23 @@ const productService = new ProductServiceClass(
   brandRepository
 );
 
-const cartService = new CartServiceClass(
-  cartRepository,
-  productRepository
-);
+const cartService = new CartServiceClass(cartRepository, productRepository);
 
 const orderService = new OrderServiceClass(
   orderRepository,
   cartRepository,
-  productRepository
+  productRepository,
+  userRepository
 );
 
 const paymentService = new PaymentServiceClass(
   paymentRepository,
   orderRepository,
+  productRepository
+);
+
+const wishlistService = new WishlistServiceClass(
+  wishlistRepository,
   productRepository
 );
 
@@ -93,6 +100,7 @@ const app = createApp({
   cartService,
   orderService,
   paymentService,
+  wishlistService,
   tokenProvider,
   authMiddleware,
 });
@@ -142,7 +150,9 @@ module.exports = {
   CartModel,
   OrderModel,
   PaymentModel,
+  WishlistModel,
 
   authService,
   customerService,
+  wishlistService,
 };

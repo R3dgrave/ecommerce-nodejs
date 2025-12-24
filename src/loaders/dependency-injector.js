@@ -7,6 +7,7 @@ const ProductModel = require("../models/product");
 const CartModel = require("../models/cart");
 const OrderModel = require("../models/order");
 const PaymentModel = require("../models/payment");
+const WishlistModel = require("../models/wishlist");
 
 const UserRepository = require("../repositories/user-repository");
 const CategoryRepository = require("../repositories/category-repository");
@@ -15,8 +16,7 @@ const ProductRepository = require("../repositories/product-repository");
 const CartRepository = require("../repositories/cart-repository");
 const OrderRepository = require("../repositories/order-repository");
 const PaymentRepository = require("../repositories/payment-repository");
-
-const TokenProvider = require("../providers/token-provider");
+const WishlistRepository = require("../repositories/wishlist-repository");
 
 const AuthServiceClass = require("../services/auth-service");
 const CategoryServiceClass = require("../services/category-service");
@@ -26,6 +26,9 @@ const CartServiceClass = require("../services/cart-service");
 const OrderServiceClass = require("../services/order-service");
 const PaymentServiceClass = require("../services/payment-service");
 const CustomerServiceClass = require("../services/customer-service");
+const WishlistServiceClass = require("../services/wishlist-service");
+
+const TokenProvider = require("../providers/token-provider");
 const authMiddlewareFactory = require("../middlewares/auth-middleware");
 
 function dependencyInjectorLoader() {
@@ -38,6 +41,7 @@ function dependencyInjectorLoader() {
   const cartRepository = new CartRepository(CartModel);
   const orderRepository = new OrderRepository(OrderModel);
   const paymentRepository = new PaymentRepository(PaymentModel);
+  const wishlistRepository = new WishlistRepository(WishlistModel);
 
   const authService = new AuthServiceClass(userRepository, tokenProvider);
   const authMiddleware = authMiddlewareFactory(tokenProvider, userRepository);
@@ -67,7 +71,15 @@ function dependencyInjectorLoader() {
     orderRepository,
     productRepository
   );
-  const cartService = new CartServiceClass(cartRepository, productRepository);
+  const cartService = new CartServiceClass(
+    cartRepository,
+    productRepository,
+    userRepository
+  );
+  const wishlistService = new WishlistServiceClass(
+    wishlistRepository, 
+    productRepository
+  );
   const customerService = new CustomerServiceClass(userRepository);
 
   const container = {
@@ -79,6 +91,7 @@ function dependencyInjectorLoader() {
     orderService,
     paymentService,
     customerService,
+    wishlistService,
 
     userRepository,
     categoryRepository,
@@ -87,6 +100,7 @@ function dependencyInjectorLoader() {
     cartRepository,
     orderRepository,
     paymentRepository,
+    wishlistRepository,
 
     authMiddleware,
 

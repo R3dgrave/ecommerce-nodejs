@@ -633,6 +633,29 @@ paths:
         404:
           $ref: '#/components/responses/NotFoundError'
 
+  /order/{id}/cancel:
+    patch:
+      tags: [Orders]
+      summary: Cancelar una orden pendiente
+      description: Cambia el estado de una orden a 'cancelled' y devuelve el stock a los productos. Solo permitido si el estado actual es 'pending'.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Orden cancelada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralResponse"
+        400:
+          $ref: '#/components/responses/BadRequestError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
   # --- PAYMENTS ---
   /payment/config:
     get:
@@ -795,6 +818,85 @@ paths:
         404:
           $ref: '#/components/responses/NotFoundError'
 
+  # --- WISHLIST ---
+  /wishlist:
+    get:
+      tags:
+        - Wishlist
+      summary: Obtener la lista de deseos del usuario
+      description: Retorna los productos guardados por el usuario autenticado. Si no existe una lista, crea una vacía.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Lista de deseos recuperada con éxito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WishlistResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /wishlist/add:
+    post:
+      tags:
+        - Wishlist
+      summary: Añadir un producto a la lista de deseos
+      description: Agrega un producto mediante su ID. Utiliza lógica de no duplicidad ($addToSet).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: string
+                  example: "64f1a2b3c4d5e6f7a8b9c123"
+      responses:
+        200:
+          description: Producto añadido exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralResponse"
+        400:
+          description: ID de producto inválido o faltante.
+          $ref: '#/components/responses/BadRequestError'
+        404:
+          description: El producto no existe.
+          $ref: '#/components/responses/NotFoundError'
+
+  /wishlist/{productId}:
+    delete:
+      tags:
+        - Wishlist
+      summary: Quitar un producto de la lista de deseos
+      description: Elimina la referencia de un producto específico de la lista del usuario.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Producto eliminado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralResponse"
+        400:
+          description: Formato de ID de producto inválido.
+          $ref: '#/components/responses/BadRequestError'
+
+#--- COMPONENTS ---
+#--- SCHEMAS, RESPONSES, SECURITY SCHEMES ---
+#--- REUSABLE DEFINITIONS ---
 components:
   #--- SECURITY SCHEMES ---
   securitySchemes:
@@ -1189,4 +1291,34 @@ components:
       properties:
         success: { type: boolean, example: true }
         message: { type: string }
-        data: { $ref: '#/components/schemas/CustomerProfile' }          
+        data: { $ref: '#/components/schemas/CustomerProfile' }    
+
+  # --- WISHLIST SCHEMAS ---
+    WishlistResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Wishlist'
+    
+    Wishlist:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "650f1a2b3c4d5e6f7a8b9c45"
+        userId:
+          type: string
+          example: "650f1a2b3c4d5e6f7a8b9c12"
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time            
