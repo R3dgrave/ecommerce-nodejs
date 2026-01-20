@@ -19,7 +19,7 @@ const app = express();
 const config = require("../config/index");
 
 const corsOptions = {
-  origin: config.frontendURL,
+  origin: config.frontend_URL,
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

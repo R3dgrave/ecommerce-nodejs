@@ -1,9 +1,5 @@
 const jwt = require("jsonwebtoken");
 
-/**
- * Clase que encapsula la generación y verificación de JWT.
- * Principio (SRP) y Provider.
- */
 class TokenProvider {
   constructor(secret) {
     if (!secret) {

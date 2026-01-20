@@ -37,7 +37,7 @@ const AuthController = (authService) => {
       if (!user) {
         throw new NotFoundError("Usuario no encontrado.");
       }
-
+      console.log(user)
       return sendResponse(res, 200, user);
     } catch (error) {
       next(error);

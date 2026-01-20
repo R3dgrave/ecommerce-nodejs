@@ -22,8 +22,6 @@ module.exports = function (categoryService, verifyToken, isAdmin) {
   router.get(
     "/",
     validatePagination,
-    verifyToken,
-    isAdmin,
     categoryController.getAllCategories
   );
 
